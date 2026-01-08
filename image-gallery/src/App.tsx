@@ -27,7 +27,7 @@ function App() {
         // データベース接続をクローズ
         await db.close();
       } catch (err) {
-        setError(err as string);
+        setError(err instanceof Error ? err.message : String(err));
         console.error('Database initialization error:', err);
       } finally {
         setLoading(false);
