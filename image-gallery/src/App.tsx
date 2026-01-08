@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
+import Database from '@tauri-apps/plugin-sql';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [dbStatus, setDbStatus] = useState<string>('Initializing...');
+
+  useEffect(() => {
+    const initDB = async () => {
+      try {
+        // データベースパスを取得
+        const dbPath = await invoke<string>('get_database_path');
+        console.log('Database path:', dbPath);
+
+        // データベースに接続（マイグレーションが自動実行される）
+        const dbUrl = `sqlite:${dbPath}`;
+        console.log('Connecting to database:', dbUrl);
+        const db = await Database.load(dbUrl);
+
+        // initialize_databaseコマンドを呼び出し
+        const result = await invoke<string>('initialize_database');
+        setDbStatus(result);
+
+        // データベース接続をクローズ
+        await db.close();
+      } catch (error) {
+        setDbStatus(`Error: ${error}`);
+        console.error('Database initialization error:', error);
+      }
+    };
+    initDB();
+  }, []);
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div className="p-8">
+      <h1 className="text-2xl font-bold mb-4">Image Gallery Manager</h1>
+      <p className="text-gray-600">Database Status: {dbStatus}</p>
+    </div>
+  );
 }
 
-export default App
+export default App;

@@ -20,7 +20,21 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "description": "Capability for the main window",
+          "windows": ["*"],
+          "permissions": [
+            "core:default",
+            "sql:allow-load",
+            "sql:allow-execute",
+            "sql:allow-close",
+            "sql:default"
+          ]
+        }
+      ]
     }
   },
   "bundle": {
