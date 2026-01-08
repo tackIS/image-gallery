@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { useEffect } from 'react';
 import Database from '@tauri-apps/plugin-sql';
+import { useImageStore } from './store/imageStore';
+import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
 
 function App() {
-  const [dbStatus, setDbStatus] = useState<string>('Initializing...');
+  const { error, setError, setLoading } = useImageStore();
 
   useEffect(() => {
-    const initDB = async () => {
+    const init = async () => {
       try {
+        setLoading(true);
+
         // データベースパスを取得
-        const dbPath = await invoke<string>('get_database_path');
+        const dbPath = await getDatabasePath();
         console.log('Database path:', dbPath);
 
         // データベースに接続（マイグレーションが自動実行される）
@@ -17,24 +20,35 @@ function App() {
         console.log('Connecting to database:', dbUrl);
         const db = await Database.load(dbUrl);
 
-        // initialize_databaseコマンドを呼び出し
-        const result = await invoke<string>('initialize_database');
-        setDbStatus(result);
+        // データベース初期化
+        await initializeDatabase();
+        console.log('Database initialized successfully');
 
         // データベース接続をクローズ
         await db.close();
-      } catch (error) {
-        setDbStatus(`Error: ${error}`);
-        console.error('Database initialization error:', error);
+      } catch (err) {
+        setError(err as string);
+        console.error('Database initialization error:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    initDB();
-  }, []);
+    init();
+  }, [setError, setLoading]);
 
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">Image Gallery Manager</h1>
-      <p className="text-gray-600">Database Status: {dbStatus}</p>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-4">
+        Image Gallery Manager
+      </h1>
+      {error && (
+        <div className="bg-red-100 text-red-700 p-4 rounded">
+          Error: {error}
+        </div>
+      )}
+      <p className="text-gray-600">
+        Database initialized. Ready for next steps.
+      </p>
     </div>
   );
 }
