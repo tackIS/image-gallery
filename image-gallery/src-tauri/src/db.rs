@@ -35,7 +35,8 @@ pub fn get_migrations() -> Vec<Migration> {
 }
 
 pub async fn init_db() -> Result<(), String> {
-    let db_path = get_db_path()?;
+    let _db_path = get_db_path()?;
     // データベースディレクトリが作成されたことを確認
     Ok(())
 }
+

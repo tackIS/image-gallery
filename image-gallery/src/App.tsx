@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import Database from '@tauri-apps/plugin-sql';
 import { useImageStore } from './store/imageStore';
 import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
+import Header from './components/Header';
 
 function App() {
-  const { error, setError, setLoading } = useImageStore();
+  const { images, currentDirectory, error, isLoading, setError, setLoading } = useImageStore();
 
   useEffect(() => {
     const init = async () => {
@@ -37,18 +38,40 @@ function App() {
   }, [setError, setLoading]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-4">
-        Image Gallery Manager
-      </h1>
-      {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded">
-          Error: {error}
-        </div>
-      )}
-      <p className="text-gray-600">
-        Database initialized. Ready for next steps.
-      </p>
+    <div className="min-h-screen bg-gray-50">
+      <Header />
+
+      <main className="p-4">
+        {error && (
+          <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+            Error: {error}
+          </div>
+        )}
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-12">
+            <div className="text-gray-600">Loading...</div>
+          </div>
+        )}
+
+        {!isLoading && currentDirectory && (
+          <div className="mb-4">
+            <p className="text-sm text-gray-600">
+              Current directory: <span className="font-medium">{currentDirectory}</span>
+            </p>
+            <p className="text-sm text-gray-600">
+              Images found: <span className="font-medium">{images.length}</span>
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !currentDirectory && (
+          <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+            <p className="text-lg">No directory selected</p>
+            <p className="text-sm mt-2">Click "Select Directory" to get started</p>
+          </div>
+        )}
+      </main>
     </div>
   );
 }
