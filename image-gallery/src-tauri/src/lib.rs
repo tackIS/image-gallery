@@ -1,5 +1,6 @@
 mod db;
 mod commands;
+mod fs_utils;
 
 use commands::*;
 
@@ -18,6 +19,8 @@ pub fn run() {
         .add_migrations(&db_url, migrations)
         .build()
     )
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_fs::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -31,6 +34,8 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       initialize_database,
       get_database_path,
+      select_directory,
+      scan_directory,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
