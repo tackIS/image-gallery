@@ -3,6 +3,7 @@ import Database from '@tauri-apps/plugin-sql';
 import { useImageStore } from './store/imageStore';
 import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
 import Header from './components/Header';
+import ImageGrid from './components/ImageGrid';
 
 function App() {
   const { images, currentDirectory, error, isLoading, setError, setLoading } = useImageStore();
@@ -41,9 +42,9 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="p-4">
+      <main>
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+          <div className="bg-red-100 text-red-700 p-4 rounded mb-4 mx-4">
             Error: {error}
           </div>
         )}
@@ -55,7 +56,7 @@ function App() {
         )}
 
         {!isLoading && currentDirectory && (
-          <div className="mb-4">
+          <div className="px-4 pt-4 pb-2">
             <p className="text-sm text-gray-600">
               Current directory: <span className="font-medium">{currentDirectory}</span>
             </p>
@@ -71,6 +72,8 @@ function App() {
             <p className="text-sm mt-2">Click "Select Directory" to get started</p>
           </div>
         )}
+
+        {!isLoading && currentDirectory && images.length > 0 && <ImageGrid />}
       </main>
     </div>
   );

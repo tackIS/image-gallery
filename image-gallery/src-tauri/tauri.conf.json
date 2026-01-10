@@ -21,6 +21,10 @@
     ],
     "security": {
       "csp": null,
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      },
       "capabilities": [
         {
           "identifier": "main-capability",
@@ -28,6 +32,15 @@
           "windows": ["*"],
           "permissions": [
             "core:default",
+            "core:path:default",
+            "core:event:default",
+            "core:window:default",
+            "core:app:default",
+            "core:image:default",
+            "core:resources:default",
+            "core:menu:default",
+            "core:tray:default",
+            "core:webview:default",
             "sql:allow-load",
             "sql:allow-execute",
             "sql:allow-close",
@@ -36,7 +49,9 @@
             "dialog:default",
             "fs:allow-read-dir",
             "fs:allow-read-file",
-            "fs:default"
+            "fs:default",
+            "fs:allow-read",
+            "fs:scope"
           ]
         }
       ]
