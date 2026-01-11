@@ -3,11 +3,12 @@ import Database from '@tauri-apps/plugin-sql';
 import type { ImageData, ImageMetadataUpdate } from '../types/image';
 
 /**
- * ファイルシステムからスキャンされた画像ファイル情報
+ * ファイルシステムからスキャンされたメディアファイル情報
  */
 interface ImageFileInfo {
   file_path: string;
   file_name: string;
+  file_type: string;
 }
 
 /**
@@ -49,19 +50,19 @@ export async function selectDirectory(): Promise<string | null> {
 }
 
 /**
- * 指定されたディレクトリ内の画像をスキャンしてデータベースに登録します
+ * 指定されたディレクトリ内の画像・動画をスキャンしてデータベースに登録します
  * @param path スキャンするディレクトリのパス
- * @returns スキャンされた画像データの配列
+ * @returns スキャンされたメディアファイルデータの配列
  */
 export async function scanDirectory(path: string): Promise<ImageData[]> {
-  // ファイルシステムから画像ファイルをスキャン
+  // ファイルシステムからメディアファイルをスキャン
   const fileInfos = await invoke<ImageFileInfo[]>('scan_directory', { path });
 
   // データベースに接続
   const db = await getDatabase();
 
   try {
-    // データベースに画像を挿入
+    // データベースにファイルを挿入
     for (const fileInfo of fileInfos) {
       // 既に存在するかチェック
       const existing = await db.select<{ count: number }[]>(
@@ -70,16 +71,15 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
       );
 
       if (existing[0].count === 0) {
-        // 存在しない場合は挿入
-        // 注: file_typeはステップ2でRust側から取得するように変更予定
+        // 存在しない場合は挿入（file_typeはバックエンドで判定済み）
         await db.execute(
           'INSERT INTO images (file_path, file_name, file_type) VALUES ($1, $2, $3)',
-          [fileInfo.file_path, fileInfo.file_name, 'image']
+          [fileInfo.file_path, fileInfo.file_name, fileInfo.file_type]
         );
       }
     }
 
-    // すべての画像を取得して返す
+    // すべてのメディアファイルを取得して返す
     return await getAllImages();
   } finally {
     await db.close();
