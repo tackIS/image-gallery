@@ -71,9 +71,10 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
 
       if (existing[0].count === 0) {
         // 存在しない場合は挿入
+        // 注: file_typeはステップ2でRust側から取得するように変更予定
         await db.execute(
-          'INSERT INTO images (file_path, file_name) VALUES ($1, $2)',
-          [fileInfo.file_path, fileInfo.file_name]
+          'INSERT INTO images (file_path, file_name, file_type) VALUES ($1, $2, $3)',
+          [fileInfo.file_path, fileInfo.file_name, 'image']
         );
       }
     }
@@ -97,13 +98,14 @@ export async function getAllImages(): Promise<ImageData[]> {
       id: number;
       file_path: string;
       file_name: string;
+      file_type: string;
       comment: string | null;
       tags: string | null;
       rating: number;
       created_at: string;
       updated_at: string;
     }>>(
-      'SELECT id, file_path, file_name, comment, tags, rating, created_at, updated_at FROM images ORDER BY created_at DESC'
+      'SELECT id, file_path, file_name, file_type, comment, tags, rating, created_at, updated_at FROM images ORDER BY created_at DESC'
     );
 
     // tagsをJSON文字列から配列にパース
@@ -111,6 +113,7 @@ export async function getAllImages(): Promise<ImageData[]> {
       id: row.id,
       file_path: row.file_path,
       file_name: row.file_name,
+      file_type: (row.file_type as 'image' | 'video') || 'image',
       comment: row.comment,
       tags: row.tags ? JSON.parse(row.tags) : [],
       rating: row.rating,
