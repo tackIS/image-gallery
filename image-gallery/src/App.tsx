@@ -4,6 +4,7 @@ import { useImageStore } from './store/imageStore';
 import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
 import Header from './components/Header';
 import ImageGrid from './components/ImageGrid';
+import ImageDetail from './components/ImageDetail';
 
 function App() {
   const { images, currentDirectory, error, isLoading, setError, setLoading } = useImageStore();
@@ -75,6 +76,9 @@ function App() {
 
         {!isLoading && currentDirectory && images.length > 0 && <ImageGrid />}
       </main>
+
+      {/* 画像詳細モーダル */}
+      <ImageDetail />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import { useImageStore } from '../store/imageStore';
  * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
  */
 export default function ImageGrid() {
-  const { images } = useImageStore();
+  const { images, setSelectedImageId } = useImageStore();
 
   if (images.length === 0) {
     return (
@@ -29,12 +29,13 @@ export default function ImageGrid() {
           <div
             key={image.id}
             className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => setSelectedImageId(image.id)}
           >
             <img
               src={imageUrl}
               alt={image.file_name}
               loading="lazy"
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover pointer-events-none"
               onError={(e) => {
                 // 画像読み込みエラー時の処理
                 const target = e.target as HTMLImageElement;
@@ -42,7 +43,7 @@ export default function ImageGrid() {
               }}
             />
             {/* 画像情報のオーバーレイ */}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pointer-events-none">
               <p className="text-white text-xs truncate" title={image.file_name}>
                 {image.file_name}
               </p>
