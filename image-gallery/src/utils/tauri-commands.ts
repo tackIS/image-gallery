@@ -135,12 +135,44 @@ export async function getImageById(_id: number): Promise<ImageData | null> {
 
 /**
  * 画像のメタデータを更新します
- * @param _data 更新するメタデータ
- * @todo ステップ7で実装
+ * @param data 更新するメタデータ
  */
 export async function updateImageMetadata(
-  _data: ImageMetadataUpdate
+  data: ImageMetadataUpdate
 ): Promise<void> {
-  // TODO: ステップ7で実装
-  throw new Error('updateImageMetadata not yet implemented - will be added in Step 7');
+  const db = await getDatabase();
+
+  try {
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    // 更新するフィールドを動的に構築
+    if (data.rating !== undefined) {
+      updates.push(`rating = $${paramIndex++}`);
+      values.push(data.rating);
+    }
+
+    if (data.comment !== undefined) {
+      updates.push(`comment = $${paramIndex++}`);
+      values.push(data.comment);
+    }
+
+    if (data.tags !== undefined) {
+      updates.push(`tags = $${paramIndex++}`);
+      values.push(JSON.stringify(data.tags));
+    }
+
+    // updated_atを現在時刻に更新
+    updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+    // WHERE句のためのIDを追加
+    values.push(data.id);
+
+    const query = `UPDATE images SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+
+    await db.execute(query, values);
+  } finally {
+    await db.close();
+  }
 }
