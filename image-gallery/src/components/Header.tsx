@@ -4,10 +4,14 @@ import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
 
 /**
  * アプリケーションヘッダーコンポーネント
- * ディレクトリ選択ボタンを表示します
+ * ディレクトリ選択ボタンと統計情報を表示します
  */
 export default function Header() {
-  const { setImages, setCurrentDirectory, setLoading, setError } = useImageStore();
+  const { images, setImages, setCurrentDirectory, setLoading, setError } = useImageStore();
+
+  // 画像と動画の件数を計算
+  const imageCount = images.filter(m => m.file_type === 'image').length;
+  const videoCount = images.filter(m => m.file_type === 'video').length;
 
   const handleSelectDirectory = async () => {
     try {
@@ -38,7 +42,17 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm p-4 flex items-center justify-between">
-      <h1 className="text-2xl font-bold text-gray-900">Image Gallery</h1>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Image Gallery</h1>
+        {images.length > 0 && (
+          <p className="text-sm text-gray-600 mt-1">
+            {imageCount} {imageCount === 1 ? 'image' : 'images'}
+            {videoCount > 0 && (
+              <>, {videoCount} {videoCount === 1 ? 'video' : 'videos'}</>
+            )}
+          </p>
+        )}
+      </div>
       <button
         onClick={handleSelectDirectory}
         className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
