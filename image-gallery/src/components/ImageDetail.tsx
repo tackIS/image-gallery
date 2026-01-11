@@ -96,8 +96,9 @@ export default function ImageDetail() {
 
   // タグを追加
   const handleAddTag = () => {
-    if (newTag.trim() && !editTags.includes(newTag.trim())) {
-      setEditTags([...editTags, newTag.trim()]);
+    const trimmedTag = newTag.trim();
+    if (trimmedTag && !editTags.some(tag => tag.toLowerCase() === trimmedTag.toLowerCase())) {
+      setEditTags([...editTags, trimmedTag]);
       setNewTag('');
     }
   };
@@ -348,7 +349,12 @@ export default function ImageDetail() {
                           type="text"
                           value={newTag}
                           onChange={(e) => setNewTag(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
                           placeholder="Add tag..."
                           style={{
                             flex: 1,
