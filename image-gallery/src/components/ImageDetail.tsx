@@ -1,28 +1,46 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageStore } from '../store/imageStore';
-import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { updateImageMetadata, getAllImages } from '../utils/tauri-commands';
+import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle } from 'lucide-react';
 
 /**
  * 画像詳細表示モーダルコンポーネント
  *
- * 選択された画像をフルサイズで表示し、メタデータを表示します。
+ * 選択された画像をフルサイズで表示し、メタデータを表示・編集します。
  * キーボードショートカット:
  * - ESC: モーダルを閉じる
  * - 左矢印: 前の画像へ
  * - 右矢印: 次の画像へ
  */
 export default function ImageDetail() {
-  const { images, selectedImageId, setSelectedImageId } = useImageStore();
+  const { images, selectedImageId, setSelectedImageId, updateImage, setImages } = useImageStore();
+
+  // 編集モード状態
+  const [isEditing, setIsEditing] = useState(false);
+  const [editRating, setEditRating] = useState(0);
+  const [editComment, setEditComment] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState('');
 
   // 選択された画像を取得
   const selectedImage = images.find((img) => img.id === selectedImageId);
   const currentIndex = images.findIndex((img) => img.id === selectedImageId);
 
-  // キーボードショートカット
+  // 画像が変更されたら編集モードをリセット
   useEffect(() => {
-    if (selectedImageId === null) return;
+    if (selectedImage) {
+      setEditRating(selectedImage.rating);
+      setEditComment(selectedImage.comment || '');
+      setEditTags(selectedImage.tags || []);
+      setIsEditing(false);
+    }
+  }, [selectedImage]);
+
+  // キーボードショートカット（編集モードでない場合のみ）
+  useEffect(() => {
+    if (selectedImageId === null || isEditing) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -42,7 +60,52 @@ export default function ImageDetail() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedImageId, images, setSelectedImageId]);
+  }, [selectedImageId, images, setSelectedImageId, isEditing]);
+
+  // 編集内容を保存
+  const handleSave = async () => {
+    if (!selectedImage) return;
+
+    try {
+      await updateImageMetadata({
+        id: selectedImage.id,
+        rating: editRating,
+        comment: editComment || undefined,
+        tags: editTags,
+      });
+
+      // データベースから最新の画像リストを再取得
+      const updatedImages = await getAllImages();
+      setImages(updatedImages);
+
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to save metadata:', error);
+      alert('Failed to save changes');
+    }
+  };
+
+  // 編集をキャンセル
+  const handleCancel = () => {
+    if (!selectedImage) return;
+    setEditRating(selectedImage.rating);
+    setEditComment(selectedImage.comment || '');
+    setEditTags(selectedImage.tags || []);
+    setIsEditing(false);
+  };
+
+  // タグを追加
+  const handleAddTag = () => {
+    if (newTag.trim() && !editTags.includes(newTag.trim())) {
+      setEditTags([...editTags, newTag.trim()]);
+      setNewTag('');
+    }
+  };
+
+  // タグを削除
+  const handleRemoveTag = (tagToRemove: string) => {
+    setEditTags(editTags.filter((tag) => tag !== tagToRemove));
+  };
 
   // 画像が選択されていない場合は何も表示しない
   if (!selectedImage) {
@@ -53,7 +116,7 @@ export default function ImageDetail() {
 
   return createPortal(
     <div
-      onClick={() => setSelectedImageId(null)}
+      onClick={() => !isEditing && setSelectedImageId(null)}
       style={{
         position: 'fixed',
         top: 0,
@@ -99,8 +162,8 @@ export default function ImageDetail() {
           <X className="w-6 h-6" />
         </button>
 
-        {/* 前の画像ボタン */}
-        {currentIndex > 0 && (
+        {/* 前の画像ボタン（編集モードでない場合のみ） */}
+        {!isEditing && currentIndex > 0 && (
           <button
             onClick={() => setSelectedImageId(images[currentIndex - 1].id)}
             style={{
@@ -120,8 +183,8 @@ export default function ImageDetail() {
           </button>
         )}
 
-        {/* 次の画像ボタン */}
-        {currentIndex < images.length - 1 && (
+        {/* 次の画像ボタン（編集モードでない場合のみ） */}
+        {!isEditing && currentIndex < images.length - 1 && (
           <button
             onClick={() => setSelectedImageId(images[currentIndex + 1].id)}
             style={{
@@ -167,9 +230,58 @@ export default function ImageDetail() {
                 maxHeight: 'calc(100vh - 2rem)',
               }}
             >
-              <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', wordBreak: 'break-word' }}>
-                {selectedImage.file_name}
-              </h2>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: 'bold', wordBreak: 'break-word', flex: 1 }}>
+                  {selectedImage.file_name}
+                </h2>
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    style={{
+                      padding: '6px',
+                      backgroundColor: '#3b82f6',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'white',
+                    }}
+                    title="Edit"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                ) : (
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={handleSave}
+                      style={{
+                        padding: '6px',
+                        backgroundColor: '#10b981',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'white',
+                      }}
+                      title="Save"
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={handleCancel}
+                      style={{
+                        padding: '6px',
+                        backgroundColor: '#ef4444',
+                        borderRadius: '4px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: 'white',
+                      }}
+                      title="Cancel"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {/* レーティング */}
@@ -179,12 +291,15 @@ export default function ImageDetail() {
                     {Array.from({ length: 5 }).map((_, i) => (
                       <svg
                         key={i}
-                        className={`w-5 h-5 ${
-                          i < selectedImage.rating ? 'text-yellow-400' : 'text-gray-600'
-                        }`}
+                        onClick={() => isEditing && setEditRating(i + 1)}
                         fill="currentColor"
                         viewBox="0 0 20 20"
-                        style={{ width: '20px', height: '20px', color: i < selectedImage.rating ? '#fbbf24' : '#4b5563' }}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          color: i < (isEditing ? editRating : selectedImage.rating) ? '#fbbf24' : '#4b5563',
+                          cursor: isEditing ? 'pointer' : 'default',
+                        }}
                       >
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
@@ -193,34 +308,123 @@ export default function ImageDetail() {
                 </div>
 
                 {/* タグ */}
-                {selectedImage.tags.length > 0 && (
-                  <div>
-                    <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Tags</h3>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {selectedImage.tags.map((tag, index) => (
-                        <span
-                          key={index}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Tags</h3>
+                  {isEditing ? (
+                    <div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                        {editTags.map((tag, index) => (
+                          <span
+                            key={index}
+                            style={{
+                              padding: '4px 8px',
+                              backgroundColor: '#2563eb',
+                              borderRadius: '4px',
+                              fontSize: '14px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            {tag}
+                            <button
+                              onClick={() => handleRemoveTag(tag)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'white',
+                                cursor: 'pointer',
+                                padding: '0',
+                                display: 'flex',
+                              }}
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <input
+                          type="text"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                          placeholder="Add tag..."
                           style={{
+                            flex: 1,
                             padding: '4px 8px',
-                            backgroundColor: '#2563eb',
+                            backgroundColor: '#374151',
+                            border: '1px solid #4b5563',
                             borderRadius: '4px',
+                            color: 'white',
+                            fontSize: '14px',
+                          }}
+                        />
+                        <button
+                          onClick={handleAddTag}
+                          style={{
+                            padding: '4px 12px',
+                            backgroundColor: '#3b82f6',
+                            borderRadius: '4px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: 'white',
                             fontSize: '14px',
                           }}
                         >
-                          {tag}
-                        </span>
-                      ))}
+                          Add
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedImage.tags.length > 0 ? (
+                        selectedImage.tags.map((tag, index) => (
+                          <span
+                            key={index}
+                            style={{
+                              padding: '4px 8px',
+                              backgroundColor: '#2563eb',
+                              borderRadius: '4px',
+                              fontSize: '14px',
+                            }}
+                          >
+                            {tag}
+                          </span>
+                        ))
+                      ) : (
+                        <span style={{ color: '#6b7280', fontSize: '14px' }}>No tags</span>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* コメント */}
-                {selectedImage.comment && (
-                  <div>
-                    <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Comment</h3>
-                    <p style={{ fontSize: '14px' }}>{selectedImage.comment}</p>
-                  </div>
-                )}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Comment</h3>
+                  {isEditing ? (
+                    <textarea
+                      value={editComment}
+                      onChange={(e) => setEditComment(e.target.value)}
+                      placeholder="Add a comment..."
+                      rows={4}
+                      style={{
+                        width: '100%',
+                        padding: '8px',
+                        backgroundColor: '#374151',
+                        border: '1px solid #4b5563',
+                        borderRadius: '4px',
+                        color: 'white',
+                        fontSize: '14px',
+                        resize: 'vertical',
+                      }}
+                    />
+                  ) : (
+                    <p style={{ fontSize: '14px' }}>
+                      {selectedImage.comment || <span style={{ color: '#6b7280' }}>No comment</span>}
+                    </p>
+                  )}
+                </div>
 
                 {/* ファイルパス */}
                 <div>
@@ -234,7 +438,7 @@ export default function ImageDetail() {
                 <div>
                   <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Created At</h3>
                   <p style={{ fontSize: '14px' }}>
-                    {new Date(selectedImage.created_at).toLocaleString()}
+                    {new Date(selectedImage.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
                   </p>
                 </div>
 
@@ -242,7 +446,7 @@ export default function ImageDetail() {
                 <div>
                   <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Updated At</h3>
                   <p style={{ fontSize: '14px' }}>
-                    {new Date(selectedImage.updated_at).toLocaleString()}
+                    {new Date(selectedImage.updated_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}
                   </p>
                 </div>
 
