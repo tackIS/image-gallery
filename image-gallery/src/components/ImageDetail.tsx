@@ -4,15 +4,16 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageStore } from '../store/imageStore';
 import { updateImageMetadata, getAllImages } from '../utils/tauri-commands';
 import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle } from 'lucide-react';
+import VideoPlayer from './VideoPlayer';
 
 /**
- * 画像詳細表示モーダルコンポーネント
+ * 画像・動画詳細表示モーダルコンポーネント
  *
- * 選択された画像をフルサイズで表示し、メタデータを表示・編集します。
+ * 選択された画像をフルサイズで表示、動画を再生し、メタデータを表示・編集します。
  * キーボードショートカット:
  * - ESC: モーダルを閉じる
- * - 左矢印: 前の画像へ
- * - 右矢印: 次の画像へ
+ * - 左矢印: 前のファイルへ
+ * - 右矢印: 次のファイルへ
  */
 export default function ImageDetail() {
   const { images, selectedImageId, setSelectedImageId, setImages } = useImageStore();
@@ -205,17 +206,24 @@ export default function ImageDetail() {
           </button>
         )}
 
-        {/* メイン画像表示エリア */}
+        {/* メイン画像・動画表示エリア */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: '16px' }}>
           <div style={{ display: 'flex', gap: '16px', maxWidth: '100%', maxHeight: '100%' }}>
-            {/* 画像 */}
+            {/* 画像または動画 */}
             <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img
-                src={imageUrl}
-                alt={selectedImage.file_name}
-                style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 2rem)', objectFit: 'contain' }}
-                onClick={(e) => e.stopPropagation()}
-              />
+              {selectedImage.file_type === 'video' ? (
+                <VideoPlayer
+                  src={imageUrl}
+                  fileName={selectedImage.file_name}
+                />
+              ) : (
+                <img
+                  src={imageUrl}
+                  alt={selectedImage.file_name}
+                  style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 2rem)', objectFit: 'contain' }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
             </div>
 
             {/* メタデータパネル */}
