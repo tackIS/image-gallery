@@ -31,28 +31,30 @@ pub async fn select_directory(app: tauri::AppHandle) -> Result<Option<String>, S
 }
 
 /**
- * 指定されたディレクトリ内の画像をスキャンしてファイルパスのリストを返します
+ * 指定されたディレクトリ内の画像・動画をスキャンしてファイルパスのリストを返します
  */
 #[tauri::command]
 pub async fn scan_directory(
     path: String,
 ) -> Result<Vec<ImageFileInfo>, String> {
     // ディレクトリをスキャン
-    let image_paths = crate::fs_utils::scan_images_in_directory(&path)?;
+    let file_paths = crate::fs_utils::scan_images_in_directory(&path)?;
 
     // ファイル情報のリストを作成
-    let result: Vec<ImageFileInfo> = image_paths
+    let result: Vec<ImageFileInfo> = file_paths
         .into_iter()
         .map(|file_path| {
             let file_name = crate::fs_utils::get_file_name(&file_path);
+            let file_type = crate::fs_utils::get_file_type(&file_path);
             ImageFileInfo {
                 file_path,
                 file_name,
+                file_type,
             }
         })
         .collect();
 
-    println!("Scanned {} images", result.len());
+    println!("Scanned {} files (images and videos)", result.len());
 
     Ok(result)
 }
@@ -61,4 +63,5 @@ pub async fn scan_directory(
 pub struct ImageFileInfo {
     pub file_path: String,
     pub file_name: String,
+    pub file_type: String,
 }
