@@ -5,6 +5,8 @@ import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
 import Header from './components/Header';
 import ImageGrid from './components/ImageGrid';
 import ImageDetail from './components/ImageDetail';
+import LoadingSpinner from './components/LoadingSpinner';
+import EmptyState from './components/EmptyState';
 
 function App() {
   const { images, currentDirectory, error, isLoading, setError, setLoading } = useImageStore();
@@ -50,11 +52,7 @@ function App() {
           </div>
         )}
 
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-gray-600">Loading...</div>
-          </div>
-        )}
+        {isLoading && <LoadingSpinner />}
 
         {!isLoading && currentDirectory && (
           <div className="px-4 pt-4 pb-2">
@@ -67,12 +65,7 @@ function App() {
           </div>
         )}
 
-        {!isLoading && !currentDirectory && (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-500">
-            <p className="text-lg">No directory selected</p>
-            <p className="text-sm mt-2">Click "Select Directory" to get started</p>
-          </div>
-        )}
+        {!isLoading && !currentDirectory && <EmptyState />}
 
         {!isLoading && currentDirectory && images.length > 0 && <ImageGrid />}
       </main>

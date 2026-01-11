@@ -15,7 +15,7 @@ import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle } from 'lucide-react
  * - 右矢印: 次の画像へ
  */
 export default function ImageDetail() {
-  const { images, selectedImageId, setSelectedImageId, updateImage, setImages } = useImageStore();
+  const { images, selectedImageId, setSelectedImageId, setImages } = useImageStore();
 
   // 編集モード状態
   const [isEditing, setIsEditing] = useState(false);
