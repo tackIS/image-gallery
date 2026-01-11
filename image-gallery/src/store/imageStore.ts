@@ -9,6 +9,8 @@ interface ImageStore {
   images: ImageData[];
   /** 現在選択されているディレクトリのパス */
   currentDirectory: string | null;
+  /** 詳細表示で選択されている画像のID（未選択時はnull） */
+  selectedImageId: number | null;
   /** データ読み込み中かどうかを示すフラグ */
   isLoading: boolean;
   /** エラーメッセージ（エラーがない場合はnull） */
@@ -18,6 +20,8 @@ interface ImageStore {
   setImages: (images: ImageData[]) => void;
   /** 現在のディレクトリパスを設定します */
   setCurrentDirectory: (path: string | null) => void;
+  /** 選択された画像IDを設定します */
+  setSelectedImageId: (id: number | null) => void;
   /** ローディング状態を設定します */
   setLoading: (isLoading: boolean) => void;
   /** エラーメッセージを設定します */
@@ -36,11 +40,13 @@ interface ImageStore {
 export const useImageStore = create<ImageStore>((set) => ({
   images: [],
   currentDirectory: null,
+  selectedImageId: null,
   isLoading: false,
   error: null,
 
   setImages: (images) => set({ images }),
   setCurrentDirectory: (path) => set({ currentDirectory: path }),
+  setSelectedImageId: (id) => set({ selectedImageId: id }),
   setLoading: (isLoading) => set({ isLoading }),
   setError: (error) => set({ error }),
   updateImage: (id, data) =>
@@ -50,5 +56,5 @@ export const useImageStore = create<ImageStore>((set) => ({
       ),
     })),
   clearError: () => set({ error: null }),
-  reset: () => set({ images: [], currentDirectory: null, isLoading: false, error: null }),
+  reset: () => set({ images: [], currentDirectory: null, selectedImageId: null, isLoading: false, error: null }),
 }));

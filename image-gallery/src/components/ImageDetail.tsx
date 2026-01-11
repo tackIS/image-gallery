@@ -1,0 +1,264 @@
+import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { useImageStore } from '../store/imageStore';
+import { X, ChevronLeft, ChevronRight } from 'lucide-react';
+
+/**
+ * 画像詳細表示モーダルコンポーネント
+ *
+ * 選択された画像をフルサイズで表示し、メタデータを表示します。
+ * キーボードショートカット:
+ * - ESC: モーダルを閉じる
+ * - 左矢印: 前の画像へ
+ * - 右矢印: 次の画像へ
+ */
+export default function ImageDetail() {
+  const { images, selectedImageId, setSelectedImageId } = useImageStore();
+
+  // 選択された画像を取得
+  const selectedImage = images.find((img) => img.id === selectedImageId);
+  const currentIndex = images.findIndex((img) => img.id === selectedImageId);
+
+  // キーボードショートカット
+  useEffect(() => {
+    if (selectedImageId === null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedImageId(null);
+      } else if (e.key === 'ArrowLeft') {
+        const idx = images.findIndex((img) => img.id === selectedImageId);
+        if (idx > 0) {
+          setSelectedImageId(images[idx - 1].id);
+        }
+      } else if (e.key === 'ArrowRight') {
+        const idx = images.findIndex((img) => img.id === selectedImageId);
+        if (idx < images.length - 1) {
+          setSelectedImageId(images[idx + 1].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImageId, images, setSelectedImageId]);
+
+  // 画像が選択されていない場合は何も表示しない
+  if (!selectedImage) {
+    return null;
+  }
+
+  const imageUrl = convertFileSrc(selectedImage.file_path, 'asset');
+
+  return createPortal(
+    <div
+      onClick={() => setSelectedImageId(null)}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      {/* モーダルコンテンツ */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* 閉じるボタン */}
+        <button
+          onClick={() => setSelectedImageId(null)}
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            zIndex: 10,
+            padding: '8px',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: '50%',
+            color: 'white',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+          aria-label="Close"
+        >
+          <X className="w-6 h-6" />
+        </button>
+
+        {/* 前の画像ボタン */}
+        {currentIndex > 0 && (
+          <button
+            onClick={() => setSelectedImageId(images[currentIndex - 1].id)}
+            style={{
+              position: 'absolute',
+              left: '16px',
+              zIndex: 10,
+              padding: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              borderRadius: '50%',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            aria-label="Previous image"
+          >
+            <ChevronLeft className="w-8 h-8" />
+          </button>
+        )}
+
+        {/* 次の画像ボタン */}
+        {currentIndex < images.length - 1 && (
+          <button
+            onClick={() => setSelectedImageId(images[currentIndex + 1].id)}
+            style={{
+              position: 'absolute',
+              right: '16px',
+              zIndex: 10,
+              padding: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              borderRadius: '50%',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            aria-label="Next image"
+          >
+            <ChevronRight className="w-8 h-8" />
+          </button>
+        )}
+
+        {/* メイン画像表示エリア */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', padding: '16px' }}>
+          <div style={{ display: 'flex', gap: '16px', maxWidth: '100%', maxHeight: '100%' }}>
+            {/* 画像 */}
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img
+                src={imageUrl}
+                alt={selectedImage.file_name}
+                style={{ maxWidth: '100%', maxHeight: 'calc(100vh - 2rem)', objectFit: 'contain' }}
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+
+            {/* メタデータパネル */}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '320px',
+                backgroundColor: '#1f2937',
+                color: 'white',
+                padding: '24px',
+                borderRadius: '8px',
+                overflowY: 'auto',
+                maxHeight: 'calc(100vh - 2rem)',
+              }}
+            >
+              <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', wordBreak: 'break-word' }}>
+                {selectedImage.file_name}
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* レーティング */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Rating</h3>
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <svg
+                        key={i}
+                        className={`w-5 h-5 ${
+                          i < selectedImage.rating ? 'text-yellow-400' : 'text-gray-600'
+                        }`}
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                        style={{ width: '20px', height: '20px', color: i < selectedImage.rating ? '#fbbf24' : '#4b5563' }}
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    ))}
+                  </div>
+                </div>
+
+                {/* タグ */}
+                {selectedImage.tags.length > 0 && (
+                  <div>
+                    <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Tags</h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {selectedImage.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            padding: '4px 8px',
+                            backgroundColor: '#2563eb',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* コメント */}
+                {selectedImage.comment && (
+                  <div>
+                    <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Comment</h3>
+                    <p style={{ fontSize: '14px' }}>{selectedImage.comment}</p>
+                  </div>
+                )}
+
+                {/* ファイルパス */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>File Path</h3>
+                  <p style={{ fontSize: '12px', wordBreak: 'break-all', color: '#d1d5db' }}>
+                    {selectedImage.file_path}
+                  </p>
+                </div>
+
+                {/* 作成日時 */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Created At</h3>
+                  <p style={{ fontSize: '14px' }}>
+                    {new Date(selectedImage.created_at).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* 更新日時 */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Updated At</h3>
+                  <p style={{ fontSize: '14px' }}>
+                    {new Date(selectedImage.updated_at).toLocaleString()}
+                  </p>
+                </div>
+
+                {/* 画像番号 */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Position</h3>
+                  <p style={{ fontSize: '14px' }}>
+                    {currentIndex + 1} / {images.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
