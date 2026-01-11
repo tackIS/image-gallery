@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Play } from 'lucide-react';
+import { Play, AlertCircle } from 'lucide-react';
 import type { ImageData } from '../types/image';
 
 interface MediaCardProps {
@@ -12,27 +13,36 @@ interface MediaCardProps {
  *
  * グリッド表示で使用され、画像の場合はimgタグ、
  * 動画の場合はvideoタグでサムネイル表示し、再生アイコンを表示します。
+ * エラー時には適切なエラーメッセージを表示します。
  */
 export default function MediaCard({ media, onClick }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
+  const [hasError, setHasError] = useState(false);
 
   return (
     <div
       className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
       onClick={onClick}
     >
-      {isVideo ? (
+      {hasError ? (
+        // エラー時のプレースホルダー
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+          <AlertCircle className="w-12 h-12 text-gray-500 mb-2" />
+          <p className="text-xs text-gray-600 text-center px-2">
+            {isVideo ? 'Video load error' : 'Image load error'}
+          </p>
+        </div>
+      ) : isVideo ? (
         // 動画の場合: videoタグでサムネイル表示（最初のフレーム）
         <>
           <video
             src={mediaUrl}
             className="w-full h-full object-cover pointer-events-none"
             preload="metadata"
-            onError={(e) => {
+            onError={() => {
               console.error('Failed to load video:', media.file_path);
-              const target = e.target as HTMLVideoElement;
-              target.style.display = 'none';
+              setHasError(true);
             }}
           />
           {/* 再生アイコンオーバーレイ */}
@@ -49,9 +59,9 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
           alt={media.file_name}
           loading="lazy"
           className="w-full h-full object-cover pointer-events-none"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Crect fill="%23ddd" width="100" height="100"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EError%3C/text%3E%3C/svg%3E';
+          onError={() => {
+            console.error('Failed to load image:', media.file_path);
+            setHasError(true);
           }}
         />
       )}
