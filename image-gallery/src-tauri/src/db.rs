@@ -13,25 +13,36 @@ pub fn get_db_path() -> Result<PathBuf, String> {
 }
 
 pub fn get_migrations() -> Vec<Migration> {
-    vec![Migration {
-        version: 1,
-        description: "create_images_table",
-        sql: "
-            CREATE TABLE IF NOT EXISTS images (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                file_path TEXT NOT NULL UNIQUE,
-                file_name TEXT NOT NULL,
-                comment TEXT,
-                tags TEXT,
-                rating INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            );
-            CREATE INDEX IF NOT EXISTS idx_file_path ON images(file_path);
-            CREATE INDEX IF NOT EXISTS idx_file_name ON images(file_name);
-        ",
-        kind: MigrationKind::Up,
-    }]
+    vec![
+        Migration {
+            version: 1,
+            description: "create_images_table",
+            sql: "
+                CREATE TABLE IF NOT EXISTS images (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    file_path TEXT NOT NULL UNIQUE,
+                    file_name TEXT NOT NULL,
+                    comment TEXT,
+                    tags TEXT,
+                    rating INTEGER DEFAULT 0,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_file_path ON images(file_path);
+                CREATE INDEX IF NOT EXISTS idx_file_name ON images(file_name);
+            ",
+            kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 2,
+            description: "add_file_type_column",
+            sql: "
+                ALTER TABLE images ADD COLUMN file_type TEXT DEFAULT 'image';
+                CREATE INDEX IF NOT EXISTS idx_file_type ON images(file_type);
+            ",
+            kind: MigrationKind::Up,
+        }
+    ]
 }
 
 pub async fn init_db() -> Result<(), String> {

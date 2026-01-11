@@ -1,17 +1,24 @@
 /**
- * 画像のメタデータを表すインターフェース
- * データベースから取得した画像情報を格納します
+ * ファイルの種類を表す型
+ */
+export type FileType = 'image' | 'video';
+
+/**
+ * 画像・動画のメタデータを表すインターフェース
+ * データベースから取得したメディアファイル情報を格納します
  */
 export interface ImageData {
   /** データベースの一意識別子 */
   id: number;
-  /** 画像ファイルの絶対パス */
+  /** ファイルの絶対パス */
   file_path: string;
-  /** 画像ファイル名 */
+  /** ファイル名 */
   file_name: string;
+  /** ファイルの種類（image または video） */
+  file_type: FileType;
   /** ユーザーが追加したコメント */
   comment: string | null;
-  /** 画像に関連付けられたタグの配列（データベースのJSON文字列からパース後） */
+  /** ファイルに関連付けられたタグの配列（データベースのJSON文字列からパース後） */
   tags: string[];
   /** 0-5の評価値 */
   rating: number;
