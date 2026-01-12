@@ -75,28 +75,32 @@ npm run tauri:build
 
 ```
 image-gallery/
-├── src/                      # React フロントエンドコード
-│   ├── components/           # UIコンポーネント
-│   │   ├── Header.tsx        # ヘッダー（ディレクトリ選択、統計表示）
-│   │   ├── ImageGrid.tsx     # グリッド表示
-│   │   ├── MediaCard.tsx     # メディアカード（画像/動画）
-│   │   ├── ImageDetail.tsx   # 詳細モーダル
-│   │   ├── VideoPlayer.tsx   # カスタム動画プレイヤー
-│   │   ├── EmptyState.tsx    # 空状態表示
-│   │   └── LoadingSpinner.tsx# ローディング表示
-│   ├── store/                # Zustand状態管理
-│   ├── types/                # TypeScript型定義
-│   ├── utils/                # ユーティリティ関数
-│   └── App.tsx               # アプリケーションルート
-├── src-tauri/                # Tauri バックエンドコード（Rust）
-│   ├── src/
-│   │   ├── main.rs           # エントリーポイント
-│   │   ├── commands.rs       # Tauriコマンド定義
-│   │   ├── db.rs             # データベース管理
-│   │   └── fs_utils.rs       # ファイルシステムユーティリティ
-│   └── tauri.conf.json       # Tauri設定
-└── doc/                      # ドキュメント
-    └── requirement.md        # 要件定義
+├── doc/                           # ドキュメント
+│   ├── 01_requirement.md          # 要件定義
+│   ├── 02_mp4-support-plan.md     # Phase 1 実装プラン
+│   └── 03_phase2-proposal.md      # Phase 2 開発提案
+└── image-gallery/
+    ├── src/                       # React フロントエンドコード
+    │   ├── components/            # UIコンポーネント
+    │   │   ├── Header.tsx         # ヘッダー（ディレクトリ選択、統計表示）
+    │   │   ├── ImageGrid.tsx      # グリッド表示
+    │   │   ├── MediaCard.tsx      # メディアカード（画像/動画）
+    │   │   ├── ImageDetail.tsx    # 詳細モーダル
+    │   │   ├── VideoPlayer.tsx    # カスタム動画プレイヤー
+    │   │   ├── EmptyState.tsx     # 空状態表示
+    │   │   └── LoadingSpinner.tsx # ローディング表示
+    │   ├── store/                 # Zustand状態管理
+    │   ├── types/                 # TypeScript型定義
+    │   ├── utils/                 # ユーティリティ関数
+    │   └── App.tsx                # アプリケーションルート
+    ├── src-tauri/                 # Tauri バックエンドコード（Rust）
+    │   ├── src/
+    │   │   ├── main.rs            # エントリーポイント
+    │   │   ├── commands.rs        # Tauriコマンド定義
+    │   │   ├── db.rs              # データベース管理
+    │   │   └── fs_utils.rs        # ファイルシステムユーティリティ
+    │   └── tauri.conf.json        # Tauri設定
+    └── README.md                  # このファイル
 ```
 
 ## 使い方
