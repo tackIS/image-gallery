@@ -34,6 +34,8 @@ pub fn run() {
     .invoke_handler(tauri::generate_handler![
       initialize_database,
       get_database_path,
+      backup_database,
+      reset_database,
       select_directory,
       scan_directory,
     ])
