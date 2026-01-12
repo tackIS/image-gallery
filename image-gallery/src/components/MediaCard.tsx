@@ -37,9 +37,10 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
         // 動画の場合: videoタグでサムネイル表示（最初のフレーム）
         <>
           <video
-            src={mediaUrl}
+            src={`${mediaUrl}#t=0.1`}
             className="w-full h-full object-cover pointer-events-none"
             preload="metadata"
+            muted
             onError={() => {
               console.error('Failed to load video:', media.file_path);
               setHasError(true);
