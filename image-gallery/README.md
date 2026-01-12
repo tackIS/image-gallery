@@ -132,7 +132,7 @@ npm run tauri -- [command] # Tauri CLIの実行
 アプリケーションはSQLiteを使用してメタデータを保存します。データベースファイルは以下の場所に作成されます：
 
 ```
-~/Library/Application Support/com.imagegallery.app/image_gallery.db
+~/.image_gallery/gallery.db
 ```
 
 ### データベーススキーマ
