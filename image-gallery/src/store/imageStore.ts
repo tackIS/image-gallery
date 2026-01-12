@@ -1,5 +1,16 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import type { ImageData } from '../types/image';
+
+/**
+ * ソート基準の型
+ */
+export type SortBy = 'name' | 'created_at' | 'rating';
+
+/**
+ * ソート順序の型
+ */
+export type SortOrder = 'asc' | 'desc';
 
 /**
  * 画像ギャラリーのグローバル状態を管理するストアのインターフェース
@@ -15,6 +26,10 @@ interface ImageStore {
   isLoading: boolean;
   /** エラーメッセージ（エラーがない場合はnull） */
   error: string | null;
+  /** ソート基準 */
+  sortBy: SortBy;
+  /** ソート順序 */
+  sortOrder: SortOrder;
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -32,29 +47,72 @@ interface ImageStore {
   clearError: () => void;
   /** ストアの状態を初期値にリセットします */
   reset: () => void;
+  /** ソート基準を設定します */
+  setSortBy: (sortBy: SortBy) => void;
+  /** ソート順序を設定します */
+  setSortOrder: (sortOrder: SortOrder) => void;
+  /** ソート済みの画像配列を取得します */
+  getSortedImages: () => ImageData[];
 }
 
 /**
  * 画像ギャラリーのグローバル状態管理用Zustandストア
  */
-export const useImageStore = create<ImageStore>((set) => ({
-  images: [],
-  currentDirectory: null,
-  selectedImageId: null,
-  isLoading: false,
-  error: null,
+export const useImageStore = create<ImageStore>()(
+  persist(
+    (set, get) => ({
+      images: [],
+      currentDirectory: null,
+      selectedImageId: null,
+      isLoading: false,
+      error: null,
+      sortBy: 'created_at',
+      sortOrder: 'desc',
 
-  setImages: (images) => set({ images }),
-  setCurrentDirectory: (path) => set({ currentDirectory: path }),
-  setSelectedImageId: (id) => set({ selectedImageId: id }),
-  setLoading: (isLoading) => set({ isLoading }),
-  setError: (error) => set({ error }),
-  updateImage: (id, data) =>
-    set((state) => ({
-      images: state.images.map((img) =>
-        img.id === id ? { ...img, ...data } : img
-      ),
-    })),
-  clearError: () => set({ error: null }),
-  reset: () => set({ images: [], currentDirectory: null, selectedImageId: null, isLoading: false, error: null }),
-}));
+      setImages: (images) => set({ images }),
+      setCurrentDirectory: (path) => set({ currentDirectory: path }),
+      setSelectedImageId: (id) => set({ selectedImageId: id }),
+      setLoading: (isLoading) => set({ isLoading }),
+      setError: (error) => set({ error }),
+      updateImage: (id, data) =>
+        set((state) => ({
+          images: state.images.map((img) =>
+            img.id === id ? { ...img, ...data } : img
+          ),
+        })),
+      clearError: () => set({ error: null }),
+      reset: () => set({ images: [], currentDirectory: null, selectedImageId: null, isLoading: false, error: null }),
+      setSortBy: (sortBy) => set({ sortBy }),
+      setSortOrder: (sortOrder) => set({ sortOrder }),
+      getSortedImages: () => {
+        const { images, sortBy, sortOrder } = get();
+        const sorted = [...images].sort((a, b) => {
+          let comparison = 0;
+
+          switch (sortBy) {
+            case 'name':
+              comparison = a.file_name.localeCompare(b.file_name);
+              break;
+            case 'created_at':
+              comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+              break;
+            case 'rating':
+              comparison = a.rating - b.rating;
+              break;
+          }
+
+          return sortOrder === 'asc' ? comparison : -comparison;
+        });
+
+        return sorted;
+      },
+    }),
+    {
+      name: 'image-gallery-sort-settings',
+      partialize: (state) => ({
+        sortBy: state.sortBy,
+        sortOrder: state.sortOrder,
+      }),
+    }
+  )
+);

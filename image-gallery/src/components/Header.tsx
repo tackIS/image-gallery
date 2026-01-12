@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FolderOpen, Settings } from 'lucide-react';
+import { FolderOpen, Settings, ArrowUpDown } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
+import type { SortBy } from '../store/imageStore';
 import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
 import SettingsModal from './SettingsModal';
 
@@ -9,7 +10,7 @@ import SettingsModal from './SettingsModal';
  * ディレクトリ選択ボタンと統計情報を表示します
  */
 export default function Header() {
-  const { images, setImages, setCurrentDirectory, setLoading, setError } = useImageStore();
+  const { images, setImages, setCurrentDirectory, setLoading, setError, sortBy, sortOrder, setSortBy, setSortOrder } = useImageStore();
   const [showSettings, setShowSettings] = useState(false);
 
   // 画像と動画の件数を計算
@@ -43,6 +44,10 @@ export default function Header() {
     }
   };
 
+  const handleToggleSortOrder = () => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+  };
+
   return (
     <>
       <header className="bg-white shadow-sm p-4 flex items-center justify-between">
@@ -57,6 +62,32 @@ export default function Header() {
             </p>
           )}
         </div>
+
+        {/* ソートコントロール */}
+        {images.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-gray-600">Sort by:</label>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+              className="px-3 py-1.5 border border-gray-300 rounded hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="name">Name</option>
+              <option value="created_at">Date</option>
+              <option value="rating">Rating</option>
+            </select>
+            <button
+              onClick={handleToggleSortOrder}
+              className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+              aria-label={`Sort ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
+              title={`${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
+            >
+              <ArrowUpDown size={16} />
+              <span className="text-sm">{sortOrder === 'asc' ? 'A→Z' : 'Z→A'}</span>
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowSettings(true)}

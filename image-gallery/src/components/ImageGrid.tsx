@@ -8,7 +8,8 @@ import MediaCard from './MediaCard';
  * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
  */
 export default function ImageGrid() {
-  const { images, setSelectedImageId } = useImageStore();
+  const { images, setSelectedImageId, getSortedImages } = useImageStore();
+  const sortedImages = getSortedImages();
 
   if (images.length === 0) {
     return (
@@ -20,7 +21,7 @@ export default function ImageGrid() {
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-4">
-      {images.map((media) => (
+      {sortedImages.map((media) => (
         <MediaCard
           key={media.id}
           media={media}
