@@ -1,6 +1,8 @@
-import { FolderOpen } from 'lucide-react';
+import { useState } from 'react';
+import { FolderOpen, Settings } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
+import SettingsModal from './SettingsModal';
 
 /**
  * アプリケーションヘッダーコンポーネント
@@ -8,6 +10,7 @@ import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
  */
 export default function Header() {
   const { images, setImages, setCurrentDirectory, setLoading, setError } = useImageStore();
+  const [showSettings, setShowSettings] = useState(false);
 
   // 画像と動画の件数を計算
   const imageCount = images.filter(m => m.file_type === 'image').length;
@@ -41,25 +44,40 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white shadow-sm p-4 flex items-center justify-between">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Image Gallery</h1>
-        {images.length > 0 && (
-          <p className="text-sm text-gray-600 mt-1">
-            {imageCount} {imageCount === 1 ? 'image' : 'images'}
-            {videoCount > 0 && (
-              <>, {videoCount} {videoCount === 1 ? 'video' : 'videos'}</>
-            )}
-          </p>
-        )}
-      </div>
-      <button
-        onClick={handleSelectDirectory}
-        className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
-      >
-        <FolderOpen size={20} />
-        Select Directory
-      </button>
-    </header>
+    <>
+      <header className="bg-white shadow-sm p-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Image Gallery</h1>
+          {images.length > 0 && (
+            <p className="text-sm text-gray-600 mt-1">
+              {imageCount} {imageCount === 1 ? 'image' : 'images'}
+              {videoCount > 0 && (
+                <>, {videoCount} {videoCount === 1 ? 'video' : 'videos'}</>
+              )}
+            </p>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 transition-colors"
+            aria-label="Settings"
+          >
+            <Settings size={20} />
+            Settings
+          </button>
+          <button
+            onClick={handleSelectDirectory}
+            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+          >
+            <FolderOpen size={20} />
+            Select Directory
+          </button>
+        </div>
+      </header>
+
+      {/* 設定モーダル */}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    </>
   );
 }

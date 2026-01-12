@@ -30,6 +30,25 @@ export async function getDatabasePath(): Promise<string> {
 }
 
 /**
+ * データベースをバックアップします
+ * @returns バックアップファイルのパス
+ * @throws バックアップに失敗した場合
+ */
+export async function backupDatabase(): Promise<string> {
+  return await invoke<string>('backup_database');
+}
+
+/**
+ * データベースをリセット（削除）します
+ * 注意: この操作は元に戻せません
+ * @returns 成功メッセージ
+ * @throws リセットに失敗した場合
+ */
+export async function resetDatabase(): Promise<string> {
+  return await invoke<string>('reset_database');
+}
+
+/**
  * データベース接続を取得します
  * @returns データベース接続
  */

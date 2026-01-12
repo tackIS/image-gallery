@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[tauri::command]
 pub async fn initialize_database() -> Result<String, String> {
@@ -10,6 +11,53 @@ pub async fn initialize_database() -> Result<String, String> {
 pub fn get_database_path() -> Result<String, String> {
     let db_path = crate::db::get_db_path()?;
     Ok(db_path.to_string_lossy().to_string())
+}
+
+/**
+ * データベースをバックアップします
+ * バックアップファイル名: gallery_backup_YYYYMMDD_HHMMSS.db
+ */
+#[tauri::command]
+pub fn backup_database() -> Result<String, String> {
+    let db_path = crate::db::get_db_path()?;
+
+    if !db_path.exists() {
+        return Err("Database file does not exist".to_string());
+    }
+
+    // バックアップファイル名を生成（タイムスタンプ付き）
+    let now = chrono::Local::now();
+    let backup_filename = format!("gallery_backup_{}.db", now.format("%Y%m%d_%H%M%S"));
+    let backup_path = db_path.parent()
+        .ok_or("Failed to get database directory")?
+        .join(backup_filename);
+
+    // ファイルをコピー
+    fs::copy(&db_path, &backup_path)
+        .map_err(|e| format!("Failed to backup database: {}", e))?;
+
+    println!("Database backed up to: {:?}", backup_path);
+    Ok(backup_path.to_string_lossy().to_string())
+}
+
+/**
+ * データベースをリセット（削除）します
+ * 注意: この操作は元に戻せません
+ */
+#[tauri::command]
+pub fn reset_database() -> Result<String, String> {
+    let db_path = crate::db::get_db_path()?;
+
+    if !db_path.exists() {
+        return Ok("Database file does not exist".to_string());
+    }
+
+    // データベースファイルを削除
+    fs::remove_file(&db_path)
+        .map_err(|e| format!("Failed to delete database: {}", e))?;
+
+    println!("Database deleted: {:?}", db_path);
+    Ok("Database reset successfully".to_string())
 }
 
 /**
