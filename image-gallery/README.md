@@ -132,8 +132,10 @@ npm run tauri -- [command] # Tauri CLIの実行
 アプリケーションはSQLiteを使用してメタデータを保存します。データベースファイルは以下の場所に作成されます：
 
 ```
-~/.image_gallery/gallery.db
+~/Library/Application Support/com.imagegallery/gallery.db
 ```
+
+**注意**: 旧バージョン（v0.1.0以前）では `~/.image_gallery/gallery.db` にデータベースが保存されていました。アプリケーションは初回起動時に自動的に新しい場所へ移行します。
 
 ### データベーススキーマ
 
@@ -165,10 +167,10 @@ CREATE TABLE images (
 
 ```bash
 # バックアップ作成
-cp ~/.image_gallery/gallery.db ~/.image_gallery/gallery.db.backup
+cp ~/Library/Application\ Support/com.imagegallery/gallery.db ~/Library/Application\ Support/com.imagegallery/gallery.db.backup
 
 # バックアップから復元
-cp ~/.image_gallery/gallery.db.backup ~/.image_gallery/gallery.db
+cp ~/Library/Application\ Support/com.imagegallery/gallery.db.backup ~/Library/Application\ Support/com.imagegallery/gallery.db
 ```
 
 ### データベースのリセット
@@ -179,7 +181,7 @@ cp ~/.image_gallery/gallery.db.backup ~/.image_gallery/gallery.db
 # 1. アプリケーションを終了
 
 # 2. データベースファイルを削除
-rm ~/.image_gallery/gallery.db
+rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 # 3. アプリケーションを再起動
 # 起動時に最新のスキーマで新しいデータベースが自動作成されます
@@ -201,14 +203,16 @@ rm ~/.image_gallery/gallery.db
 # 1. アプリケーションを終了
 
 # 2. （オプション）既存データをバックアップ
-cp ~/.image_gallery/gallery.db ~/.image_gallery/gallery.db.backup
+cp ~/Library/Application\ Support/com.imagegallery/gallery.db ~/Library/Application\ Support/com.imagegallery/gallery.db.backup
 
 # 3. データベースを削除
-rm ~/.image_gallery/gallery.db
+rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 # 4. アプリケーションを再起動
 # 新しいスキーマでデータベースが再作成されます
 ```
+
+**注意**: 旧バージョン（v0.1.0以前）を使用していた場合、データベースは `~/.image_gallery/gallery.db` にあります。新バージョンでは自動的に新しい場所へ移行されます。
 
 ### 動画のサムネイルが表示されない
 
@@ -224,9 +228,14 @@ rm ~/.image_gallery/gallery.db
 **解決方法**:
 1. データベースファイルを一時的に移動して起動を試みる：
    ```bash
-   mv ~/.image_gallery/gallery.db ~/.image_gallery/gallery.db.old
+   mv ~/Library/Application\ Support/com.imagegallery/gallery.db ~/Library/Application\ Support/com.imagegallery/gallery.db.old
    ```
-2. ログを確認する（開発モードで実行）：
+2. 旧場所のデータベースファイルも確認：
+   ```bash
+   # 旧場所にファイルが残っている場合は削除
+   rm ~/.image_gallery/gallery.db
+   ```
+3. ログを確認する（開発モードで実行）：
    ```bash
    npm run tauri:dev
    ```

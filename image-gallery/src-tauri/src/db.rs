@@ -3,13 +3,42 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 pub fn get_db_path() -> Result<PathBuf, String> {
     let home_dir = dirs::home_dir().ok_or("Failed to get home directory")?;
-    let db_dir = home_dir.join(".image_gallery");
-    let db_path = db_dir.join("gallery.db");
 
-    // ディレクトリ作成
-    std::fs::create_dir_all(&db_dir).map_err(|e| format!("Failed to create db directory: {}", e))?;
+    // 新しい標準的な場所: ~/Library/Application Support/com.imagegallery
+    let new_db_dir = home_dir.join("Library/Application Support/com.imagegallery");
+    let new_db_path = new_db_dir.join("gallery.db");
 
-    Ok(db_path)
+    // 古い場所: ~/.image_gallery
+    let old_db_dir = home_dir.join(".image_gallery");
+    let old_db_path = old_db_dir.join("gallery.db");
+
+    // 新しいディレクトリを作成
+    std::fs::create_dir_all(&new_db_dir)
+        .map_err(|e| format!("Failed to create db directory: {}", e))?;
+
+    // 既存のデータベースを旧場所から新場所に移行
+    if old_db_path.exists() && !new_db_path.exists() {
+        println!("Migrating database from old location to Application Support...");
+        std::fs::copy(&old_db_path, &new_db_path)
+            .map_err(|e| format!("Failed to migrate database: {}", e))?;
+        println!("Database migration completed successfully");
+
+        // 古いデータベースファイルを削除（オプション: バックアップとして残すことも可能）
+        if let Err(e) = std::fs::remove_file(&old_db_path) {
+            eprintln!("Warning: Failed to remove old database file: {}", e);
+        } else {
+            println!("Old database file removed");
+        }
+
+        // 古いディレクトリが空なら削除
+        if let Ok(entries) = std::fs::read_dir(&old_db_dir) {
+            if entries.count() == 0 {
+                let _ = std::fs::remove_dir(&old_db_dir);
+            }
+        }
+    }
+
+    Ok(new_db_path)
 }
 
 pub fn get_migrations() -> Vec<Migration> {
