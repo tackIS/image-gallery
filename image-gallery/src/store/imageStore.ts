@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ImageData } from '../types/image';
+import type { ImageData, FileType } from '../types/image';
 
 /**
  * ソート基準の型
@@ -11,6 +11,18 @@ export type SortBy = 'name' | 'created_at' | 'rating';
  * ソート順序の型
  */
 export type SortOrder = 'asc' | 'desc';
+
+/**
+ * フィルター設定の型
+ */
+export interface FilterSettings {
+  /** ファイルタイプフィルター（'all' | 'image' | 'video'） */
+  fileType: FileType | 'all';
+  /** 最低評価値（0-5） */
+  minRating: number;
+  /** 選択されたタグ（空配列は全てを表示） */
+  selectedTags: string[];
+}
 
 /**
  * 画像ギャラリーのグローバル状態を管理するストアのインターフェース
@@ -30,6 +42,8 @@ interface ImageStore {
   sortBy: SortBy;
   /** ソート順序 */
   sortOrder: SortOrder;
+  /** フィルター設定 */
+  filterSettings: FilterSettings;
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -51,13 +65,27 @@ interface ImageStore {
   setSortBy: (sortBy: SortBy) => void;
   /** ソート順序を設定します */
   setSortOrder: (sortOrder: SortOrder) => void;
-  /** ソート済みの画像配列を取得します */
+  /** フィルター設定を更新します */
+  setFilterSettings: (settings: Partial<FilterSettings>) => void;
+  /** フィルター設定をリセットします */
+  resetFilters: () => void;
+  /** 全てのタグを取得します */
+  getAllTags: () => string[];
+  /** フィルター済みでソート済みの画像配列を取得します */
+  getSortedAndFilteredImages: () => ImageData[];
+  /** ソート済みの画像配列を取得します（後方互換性のため残す） */
   getSortedImages: () => ImageData[];
 }
 
 /**
  * 画像ギャラリーのグローバル状態管理用Zustandストア
  */
+const defaultFilterSettings: FilterSettings = {
+  fileType: 'all',
+  minRating: 0,
+  selectedTags: [],
+};
+
 export const useImageStore = create<ImageStore>()(
   persist(
     (set, get) => ({
@@ -68,6 +96,7 @@ export const useImageStore = create<ImageStore>()(
       error: null,
       sortBy: 'created_at',
       sortOrder: 'desc',
+      filterSettings: defaultFilterSettings,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -84,9 +113,49 @@ export const useImageStore = create<ImageStore>()(
       reset: () => set({ images: [], currentDirectory: null, selectedImageId: null, isLoading: false, error: null }),
       setSortBy: (sortBy) => set({ sortBy }),
       setSortOrder: (sortOrder) => set({ sortOrder }),
-      getSortedImages: () => {
-        const { images, sortBy, sortOrder } = get();
-        const sorted = [...images].sort((a, b) => {
+      setFilterSettings: (settings) =>
+        set((state) => ({
+          filterSettings: { ...state.filterSettings, ...settings },
+        })),
+      resetFilters: () => set({ filterSettings: defaultFilterSettings }),
+      getAllTags: () => {
+        const { images } = get();
+        const tagsSet = new Set<string>();
+        images.forEach((img) => {
+          img.tags.forEach((tag) => tagsSet.add(tag));
+        });
+        return Array.from(tagsSet).sort();
+      },
+      getSortedAndFilteredImages: () => {
+        const { images, sortBy, sortOrder, filterSettings } = get();
+
+        // フィルタリング
+        let filtered = images.filter((img) => {
+          // ファイルタイプでフィルター
+          if (filterSettings.fileType !== 'all' && img.file_type !== filterSettings.fileType) {
+            return false;
+          }
+
+          // 評価でフィルター
+          if (img.rating < filterSettings.minRating) {
+            return false;
+          }
+
+          // タグでフィルター（選択されたタグがある場合のみ）
+          if (filterSettings.selectedTags.length > 0) {
+            const hasSelectedTag = filterSettings.selectedTags.some((tag) =>
+              img.tags.includes(tag)
+            );
+            if (!hasSelectedTag) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+        // ソート
+        const sorted = [...filtered].sort((a, b) => {
           let comparison = 0;
 
           switch (sortBy) {
@@ -106,12 +175,17 @@ export const useImageStore = create<ImageStore>()(
 
         return sorted;
       },
+      getSortedImages: () => {
+        // 後方互換性のため、getSortedAndFilteredImagesを呼び出す
+        return get().getSortedAndFilteredImages();
+      },
     }),
     {
-      name: 'image-gallery-sort-settings',
+      name: 'image-gallery-settings',
       partialize: (state) => ({
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
+        filterSettings: state.filterSettings,
       }),
     }
   )
