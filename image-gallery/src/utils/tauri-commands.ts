@@ -121,10 +121,11 @@ export async function getAllImages(): Promise<ImageData[]> {
       comment: string | null;
       tags: string | null;
       rating: number;
+      is_favorite: number;
       created_at: string;
       updated_at: string;
     }>>(
-      'SELECT id, file_path, file_name, file_type, comment, tags, rating, created_at, updated_at FROM images ORDER BY created_at DESC'
+      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at FROM images ORDER BY created_at DESC'
     );
 
     // tagsをJSON文字列から配列にパース
@@ -136,6 +137,7 @@ export async function getAllImages(): Promise<ImageData[]> {
       comment: row.comment,
       tags: row.tags ? JSON.parse(row.tags) : [],
       rating: row.rating,
+      is_favorite: row.is_favorite,
       created_at: row.created_at,
       updated_at: row.updated_at,
     }));
@@ -183,6 +185,11 @@ export async function updateImageMetadata(
     if (data.tags !== undefined) {
       updates.push(`tags = $${paramIndex++}`);
       values.push(JSON.stringify(data.tags));
+    }
+
+    if (data.is_favorite !== undefined) {
+      updates.push(`is_favorite = $${paramIndex++}`);
+      values.push(data.is_favorite);
     }
 
     // updated_atを現在時刻に更新

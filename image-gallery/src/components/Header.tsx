@@ -79,7 +79,8 @@ export default function Header() {
   const hasActiveFilters =
     filterSettings.fileType !== 'all' ||
     filterSettings.minRating > 0 ||
-    filterSettings.selectedTags.length > 0;
+    filterSettings.selectedTags.length > 0 ||
+    filterSettings.showOnlyFavorites;
 
   return (
     <>
@@ -117,7 +118,8 @@ export default function Header() {
                   <span className="bg-blue-500 text-white text-xs px-1.5 py-0.5 rounded-full">
                     {(filterSettings.fileType !== 'all' ? 1 : 0) +
                       (filterSettings.minRating > 0 ? 1 : 0) +
-                      filterSettings.selectedTags.length}
+                      filterSettings.selectedTags.length +
+                      (filterSettings.showOnlyFavorites ? 1 : 0)}
                   </span>
                 )}
               </button>
@@ -133,6 +135,21 @@ export default function Header() {
                     >
                       <X size={16} />
                     </button>
+                  </div>
+
+                  {/* お気に入りフィルター */}
+                  <div className="mb-4">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filterSettings.showOnlyFavorites}
+                        onChange={(e) =>
+                          setFilterSettings({ showOnlyFavorites: e.target.checked })
+                        }
+                        className="w-4 h-4"
+                      />
+                      <span className="text-sm text-gray-700">Show only favorites</span>
+                    </label>
                   </div>
 
                   {/* ファイルタイプフィルター */}

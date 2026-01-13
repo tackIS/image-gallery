@@ -22,6 +22,8 @@ export interface FilterSettings {
   minRating: number;
   /** 選択されたタグ（空配列は全てを表示） */
   selectedTags: string[];
+  /** お気に入りのみ表示 */
+  showOnlyFavorites: boolean;
 }
 
 /**
@@ -57,6 +59,8 @@ interface ImageStore {
   setError: (error: string | null) => void;
   /** 特定の画像のデータを更新します */
   updateImage: (id: number, data: Partial<ImageData>) => void;
+  /** お気に入り状態を切り替えます */
+  toggleFavorite: (id: number) => void;
   /** エラーメッセージをクリアします */
   clearError: () => void;
   /** ストアの状態を初期値にリセットします */
@@ -84,6 +88,7 @@ const defaultFilterSettings: FilterSettings = {
   fileType: 'all',
   minRating: 0,
   selectedTags: [],
+  showOnlyFavorites: false,
 };
 
 export const useImageStore = create<ImageStore>()(
@@ -109,6 +114,12 @@ export const useImageStore = create<ImageStore>()(
             img.id === id ? { ...img, ...data } : img
           ),
         })),
+      toggleFavorite: (id) =>
+        set((state) => ({
+          images: state.images.map((img) =>
+            img.id === id ? { ...img, is_favorite: img.is_favorite === 1 ? 0 : 1 } : img
+          ),
+        })),
       clearError: () => set({ error: null }),
       reset: () => set({ images: [], currentDirectory: null, selectedImageId: null, isLoading: false, error: null }),
       setSortBy: (sortBy) => set({ sortBy }),
@@ -131,6 +142,11 @@ export const useImageStore = create<ImageStore>()(
 
         // フィルタリング
         let filtered = images.filter((img) => {
+          // お気に入りフィルター
+          if (filterSettings.showOnlyFavorites && img.is_favorite !== 1) {
+            return false;
+          }
+
           // ファイルタイプでフィルター
           if (filterSettings.fileType !== 'all' && img.file_type !== filterSettings.fileType) {
             return false;
