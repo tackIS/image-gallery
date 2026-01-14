@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Play, AlertCircle } from 'lucide-react';
+import { Play, AlertCircle, Heart } from 'lucide-react';
+import { useImageStore } from '../store/imageStore';
+import { updateImageMetadata } from '../utils/tauri-commands';
 import type { ImageData } from '../types/image';
 
 interface MediaCardProps {
@@ -19,6 +21,23 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
+  const { toggleFavorite } = useImageStore();
+  const isFavorite = media.is_favorite === 1;
+
+  const handleFavoriteClick = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card onClick from firing
+    try {
+      toggleFavorite(media.id);
+      await updateImageMetadata({
+        id: media.id,
+        is_favorite: isFavorite ? 0 : 1,
+      });
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      // Revert on error
+      toggleFavorite(media.id);
+    }
+  };
 
   return (
     <div
@@ -66,6 +85,18 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
           }}
         />
       )}
+
+      {/* お気に入りボタン */}
+      <button
+        onClick={handleFavoriteClick}
+        className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 hover:bg-white transition-colors z-10"
+        aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+      >
+        <Heart
+          size={18}
+          className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+        />
+      </button>
 
       {/* ファイル情報のオーバーレイ */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 pointer-events-none">

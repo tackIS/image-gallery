@@ -70,6 +70,15 @@ pub fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_file_type ON images(file_type);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 3,
+            description: "add_is_favorite_column",
+            sql: "
+                ALTER TABLE images ADD COLUMN is_favorite INTEGER DEFAULT 0;
+                CREATE INDEX IF NOT EXISTS idx_is_favorite ON images(is_favorite);
+            ",
+            kind: MigrationKind::Up,
         }
     ]
 }

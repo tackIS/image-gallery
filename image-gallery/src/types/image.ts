@@ -22,6 +22,8 @@ export interface ImageData {
   tags: string[];
   /** 0-5の評価値 */
   rating: number;
+  /** お気に入りかどうか（0: false, 1: true） */
+  is_favorite: number;
   /** レコード作成日時（ISO 8601形式） */
   created_at: string;
   /** レコード最終更新日時（ISO 8601形式） */
@@ -41,6 +43,8 @@ export interface ImageMetadataUpdate {
   tags?: string[];
   /** 更新する評価値（オプション） */
   rating?: number;
+  /** 更新するお気に入り状態（オプション） */
+  is_favorite?: number;
 }
 
 /**
