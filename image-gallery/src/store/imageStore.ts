@@ -13,6 +13,11 @@ export type SortBy = 'name' | 'created_at' | 'rating';
 export type SortOrder = 'asc' | 'desc';
 
 /**
+ * タグフィルターモードの型
+ */
+export type TagFilterMode = 'any' | 'all';
+
+/**
  * フィルター設定の型
  */
 export interface FilterSettings {
@@ -22,6 +27,8 @@ export interface FilterSettings {
   minRating: number;
   /** 選択されたタグ（空配列は全てを表示） */
   selectedTags: string[];
+  /** タグフィルターモード（'any': OR検索, 'all': AND検索） */
+  tagFilterMode: TagFilterMode;
   /** お気に入りのみ表示 */
   showOnlyFavorites: boolean;
 }
@@ -79,6 +86,8 @@ interface ImageStore {
   setSearchQuery: (query: string) => void;
   /** 全てのタグを取得します */
   getAllTags: () => string[];
+  /** タグと使用数を取得します */
+  getTagsWithCount: () => Array<{ tag: string; count: number }>;
   /** フィルター済みでソート済みの画像配列を取得します */
   getSortedAndFilteredImages: () => ImageData[];
   /** ソート済みの画像配列を取得します（後方互換性のため残す） */
@@ -92,6 +101,7 @@ const defaultFilterSettings: FilterSettings = {
   fileType: 'all',
   minRating: 0,
   selectedTags: [],
+  tagFilterMode: 'any',
   showOnlyFavorites: false,
 };
 
@@ -143,6 +153,18 @@ export const useImageStore = create<ImageStore>()(
         });
         return Array.from(tagsSet).sort();
       },
+      getTagsWithCount: () => {
+        const { images } = get();
+        const tagCounts = new Map<string, number>();
+        images.forEach((img) => {
+          img.tags.forEach((tag) => {
+            tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+          });
+        });
+        return Array.from(tagCounts.entries())
+          .map(([tag, count]) => ({ tag, count }))
+          .sort((a, b) => b.count - a.count); // Sort by count descending
+      },
       getSortedAndFilteredImages: () => {
         const { images, sortBy, sortOrder, filterSettings, searchQuery } = get();
 
@@ -173,11 +195,22 @@ export const useImageStore = create<ImageStore>()(
 
           // タグでフィルター（選択されたタグがある場合のみ）
           if (filterSettings.selectedTags.length > 0) {
-            const hasSelectedTag = filterSettings.selectedTags.some((tag) =>
-              img.tags.includes(tag)
-            );
-            if (!hasSelectedTag) {
-              return false;
+            if (filterSettings.tagFilterMode === 'all') {
+              // AND検索: 選択されたタグを全て含む
+              const hasAllTags = filterSettings.selectedTags.every((tag) =>
+                img.tags.includes(tag)
+              );
+              if (!hasAllTags) {
+                return false;
+              }
+            } else {
+              // OR検索: 選択されたタグのいずれかを含む
+              const hasAnyTag = filterSettings.selectedTags.some((tag) =>
+                img.tags.includes(tag)
+              );
+              if (!hasAnyTag) {
+                return false;
+              }
             }
           }
 
