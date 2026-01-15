@@ -41,14 +41,14 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
 
   return (
     <div
-      className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 hover:shadow-lg transition-shadow cursor-pointer"
+      className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
       onClick={onClick}
     >
       {hasError ? (
         // エラー時のプレースホルダー
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
-          <AlertCircle className="w-12 h-12 text-gray-500 mb-2" />
-          <p className="text-xs text-gray-600 text-center px-2">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-600">
+          <AlertCircle className="w-12 h-12 text-gray-500 dark:text-gray-400 mb-2" />
+          <p className="text-xs text-gray-600 dark:text-gray-300 text-center px-2">
             {isVideo ? 'Video load error' : 'Image load error'}
           </p>
         </div>
@@ -89,12 +89,12 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
       {/* お気に入りボタン */}
       <button
         onClick={handleFavoriteClick}
-        className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 hover:bg-white transition-colors z-10"
+        className="absolute top-2 right-2 p-1.5 rounded-full bg-white/90 dark:bg-gray-800/90 hover:bg-white dark:hover:bg-gray-800 transition-colors z-10"
         aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
       >
         <Heart
           size={18}
-          className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600'}
+          className={isFavorite ? 'text-red-500 fill-red-500' : 'text-gray-600 dark:text-gray-300'}
         />
       </button>
 
