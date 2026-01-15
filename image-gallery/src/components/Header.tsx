@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FolderOpen, Settings, ArrowUpDown, Filter, X } from 'lucide-react';
+import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import type { SortBy } from '../store/imageStore';
 import type { FileType } from '../types/image';
@@ -26,6 +26,8 @@ export default function Header() {
     resetFilters,
     getAllTags,
     getSortedAndFilteredImages,
+    searchQuery,
+    setSearchQuery,
   } = useImageStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -97,6 +99,31 @@ export default function Header() {
             </p>
           )}
         </div>
+
+        {/* 検索バー */}
+        {images.length > 0 && (
+          <div className="flex-1 max-w-md mx-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by filename..."
+                className="w-full pl-10 pr-10 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                  aria-label="Clear search"
+                >
+                  <X size={16} className="text-gray-400" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ソートとフィルターコントロール */}
         {images.length > 0 && (
