@@ -24,7 +24,7 @@ export default function Header() {
     filterSettings,
     setFilterSettings,
     resetFilters,
-    getAllTags,
+    getTagsWithCount,
     getSortedAndFilteredImages,
     searchQuery,
     setSearchQuery,
@@ -32,7 +32,7 @@ export default function Header() {
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  const availableTags = getAllTags();
+  const tagsWithCount = getTagsWithCount();
   const filteredImages = getSortedAndFilteredImages();
 
   // 画像と動画の件数を計算
@@ -215,23 +215,48 @@ export default function Header() {
                   </div>
 
                   {/* タグフィルター */}
-                  {availableTags.length > 0 && (
+                  {tagsWithCount.length > 0 && (
                     <div className="mb-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Tags
-                      </label>
+                      <div className="flex items-center justify-between mb-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Tags
+                        </label>
+                        {filterSettings.selectedTags.length > 0 && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">Match:</span>
+                            <button
+                              onClick={() =>
+                                setFilterSettings({
+                                  tagFilterMode:
+                                    filterSettings.tagFilterMode === 'any' ? 'all' : 'any',
+                                })
+                              }
+                              className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                            >
+                              {filterSettings.tagFilterMode === 'any' ? 'ANY' : 'ALL'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
-                        {availableTags.map((tag) => (
+                        {tagsWithCount.map(({ tag, count }) => (
                           <button
                             key={tag}
                             onClick={() => handleToggleTag(tag)}
-                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                            className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                               filterSettings.selectedTags.includes(tag)
                                 ? 'bg-blue-500 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                           >
-                            {tag}
+                            <span>{tag}</span>
+                            <span className={`text-xs ${
+                              filterSettings.selectedTags.includes(tag)
+                                ? 'text-blue-100'
+                                : 'text-gray-500'
+                            }`}>
+                              ({count})
+                            </span>
                           </button>
                         ))}
                       </div>
