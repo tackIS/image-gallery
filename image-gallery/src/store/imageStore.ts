@@ -46,6 +46,8 @@ interface ImageStore {
   sortOrder: SortOrder;
   /** フィルター設定 */
   filterSettings: FilterSettings;
+  /** 検索クエリ */
+  searchQuery: string;
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -73,6 +75,8 @@ interface ImageStore {
   setFilterSettings: (settings: Partial<FilterSettings>) => void;
   /** フィルター設定をリセットします */
   resetFilters: () => void;
+  /** 検索クエリを設定します */
+  setSearchQuery: (query: string) => void;
   /** 全てのタグを取得します */
   getAllTags: () => string[];
   /** フィルター済みでソート済みの画像配列を取得します */
@@ -102,6 +106,7 @@ export const useImageStore = create<ImageStore>()(
       sortBy: 'created_at',
       sortOrder: 'desc',
       filterSettings: defaultFilterSettings,
+      searchQuery: '',
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -129,6 +134,7 @@ export const useImageStore = create<ImageStore>()(
           filterSettings: { ...state.filterSettings, ...settings },
         })),
       resetFilters: () => set({ filterSettings: defaultFilterSettings }),
+      setSearchQuery: (query) => set({ searchQuery: query }),
       getAllTags: () => {
         const { images } = get();
         const tagsSet = new Set<string>();
@@ -138,10 +144,18 @@ export const useImageStore = create<ImageStore>()(
         return Array.from(tagsSet).sort();
       },
       getSortedAndFilteredImages: () => {
-        const { images, sortBy, sortOrder, filterSettings } = get();
+        const { images, sortBy, sortOrder, filterSettings, searchQuery } = get();
 
         // フィルタリング
         let filtered = images.filter((img) => {
+          // 検索クエリでフィルター
+          if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase();
+            const fileName = img.file_name.toLowerCase();
+            if (!fileName.includes(query)) {
+              return false;
+            }
+          }
           // お気に入りフィルター
           if (filterSettings.showOnlyFavorites && img.is_favorite !== 1) {
             return false;
