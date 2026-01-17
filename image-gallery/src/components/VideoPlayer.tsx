@@ -44,10 +44,14 @@ export default function VideoPlayer({ src }: VideoPlayerProps) {
 
     if (isPlaying) {
       video.pause();
+      setIsPlaying(false);
     } else {
-      video.play();
+      video.play().catch((error) => {
+        console.error('Failed to play video:', error);
+        setIsPlaying(false);
+      });
+      setIsPlaying(true);
     }
-    setIsPlaying(!isPlaying);
   };
 
   const toggleMute = () => {
