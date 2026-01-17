@@ -34,6 +34,11 @@ export interface FilterSettings {
 }
 
 /**
+ * スライドショーの再生間隔（秒）
+ */
+export type SlideshowInterval = 3 | 5 | 10;
+
+/**
  * 画像ギャラリーのグローバル状態を管理するストアのインターフェース
  */
 interface ImageStore {
@@ -55,6 +60,10 @@ interface ImageStore {
   filterSettings: FilterSettings;
   /** 検索クエリ */
   searchQuery: string;
+  /** スライドショーが有効かどうか */
+  isSlideshowActive: boolean;
+  /** スライドショーの再生間隔（秒） */
+  slideshowInterval: SlideshowInterval;
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -92,6 +101,14 @@ interface ImageStore {
   getSortedAndFilteredImages: () => ImageData[];
   /** ソート済みの画像配列を取得します（後方互換性のため残す） */
   getSortedImages: () => ImageData[];
+  /** スライドショーを開始します */
+  startSlideshow: () => void;
+  /** スライドショーを停止します */
+  stopSlideshow: () => void;
+  /** スライドショーの再生/一時停止を切り替えます */
+  toggleSlideshow: () => void;
+  /** スライドショーの再生間隔を設定します */
+  setSlideshowInterval: (interval: SlideshowInterval) => void;
 }
 
 /**
@@ -117,6 +134,8 @@ export const useImageStore = create<ImageStore>()(
       sortOrder: 'desc',
       filterSettings: defaultFilterSettings,
       searchQuery: '',
+      isSlideshowActive: false,
+      slideshowInterval: 5,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -242,6 +261,10 @@ export const useImageStore = create<ImageStore>()(
         // 後方互換性のため、getSortedAndFilteredImagesを呼び出す
         return get().getSortedAndFilteredImages();
       },
+      startSlideshow: () => set({ isSlideshowActive: true }),
+      stopSlideshow: () => set({ isSlideshowActive: false }),
+      toggleSlideshow: () => set((state) => ({ isSlideshowActive: !state.isSlideshowActive })),
+      setSlideshowInterval: (interval) => set({ slideshowInterval: interval }),
     }),
     {
       name: 'image-gallery-settings',
@@ -249,6 +272,7 @@ export const useImageStore = create<ImageStore>()(
         sortBy: state.sortBy,
         sortOrder: state.sortOrder,
         filterSettings: state.filterSettings,
+        slideshowInterval: state.slideshowInterval,
       }),
     }
   )
