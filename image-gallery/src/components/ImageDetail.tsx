@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageStore } from '../store/imageStore';
 import { updateImageMetadata, getAllImages } from '../utils/tauri-commands';
-import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle, Presentation } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
+import SlideshowControls from './SlideshowControls';
 
 /**
  * 画像・動画詳細表示モーダルコンポーネント
@@ -16,7 +17,16 @@ import VideoPlayer from './VideoPlayer';
  * - 右矢印: 次のファイルへ
  */
 export default function ImageDetail() {
-  const { images, selectedImageId, setSelectedImageId, setImages } = useImageStore();
+  const {
+    images,
+    selectedImageId,
+    setSelectedImageId,
+    setImages,
+    isSlideshowActive,
+    slideshowInterval,
+    startSlideshow,
+    stopSlideshow,
+  } = useImageStore();
 
   // 編集モード状態
   const [isEditing, setIsEditing] = useState(false);
@@ -46,6 +56,7 @@ export default function ImageDetail() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSelectedImageId(null);
+        stopSlideshow();
       } else if (e.key === 'ArrowLeft') {
         const idx = images.findIndex((img) => img.id === selectedImageId);
         if (idx > 0) {
@@ -61,7 +72,24 @@ export default function ImageDetail() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedImageId, images, setSelectedImageId, isEditing]);
+  }, [selectedImageId, images, setSelectedImageId, isEditing, stopSlideshow]);
+
+  // スライドショー自動再生
+  useEffect(() => {
+    if (!isSlideshowActive || selectedImageId === null || isEditing) return;
+
+    const timer = setTimeout(() => {
+      const currentIdx = images.findIndex((img) => img.id === selectedImageId);
+      if (currentIdx < images.length - 1) {
+        setSelectedImageId(images[currentIdx + 1].id);
+      } else {
+        // 最後の画像に到達したらスライドショーを停止
+        stopSlideshow();
+      }
+    }, slideshowInterval * 1000);
+
+    return () => clearTimeout(timer);
+  }, [isSlideshowActive, selectedImageId, images, slideshowInterval, setSelectedImageId, isEditing, stopSlideshow]);
 
   // 編集内容を保存
   const handleSave = async () => {
@@ -109,6 +137,20 @@ export default function ImageDetail() {
     setEditTags(editTags.filter((tag) => tag !== tagToRemove));
   };
 
+  // 前の画像へ移動
+  const handlePrevious = () => {
+    if (currentIndex > 0) {
+      setSelectedImageId(images[currentIndex - 1].id);
+    }
+  };
+
+  // 次の画像へ移動
+  const handleNext = () => {
+    if (currentIndex < images.length - 1) {
+      setSelectedImageId(images[currentIndex + 1].id);
+    }
+  };
+
   // 画像が選択されていない場合は何も表示しない
   if (!selectedImage) {
     return null;
@@ -146,7 +188,10 @@ export default function ImageDetail() {
       >
         {/* 閉じるボタン */}
         <button
-          onClick={() => setSelectedImageId(null)}
+          onClick={() => {
+            setSelectedImageId(null);
+            stopSlideshow();
+          }}
           style={{
             position: 'absolute',
             top: '16px',
@@ -164,10 +209,33 @@ export default function ImageDetail() {
           <X className="w-6 h-6" />
         </button>
 
-        {/* 前の画像ボタン（編集モードでない場合のみ） */}
-        {!isEditing && currentIndex > 0 && (
+        {/* スライドショー開始ボタン（スライドショー非アクティブ時のみ） */}
+        {!isSlideshowActive && !isEditing && (
           <button
-            onClick={() => setSelectedImageId(images[currentIndex - 1].id)}
+            onClick={startSlideshow}
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '64px',
+              zIndex: 10,
+              padding: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.5)',
+              borderRadius: '50%',
+              color: 'white',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+            aria-label="Start slideshow"
+            title="Start slideshow"
+          >
+            <Presentation className="w-6 h-6" />
+          </button>
+        )}
+
+        {/* 前の画像ボタン（編集モードでない場合、スライドショー非アクティブ時のみ） */}
+        {!isEditing && !isSlideshowActive && currentIndex > 0 && (
+          <button
+            onClick={handlePrevious}
             style={{
               position: 'absolute',
               left: '16px',
@@ -185,10 +253,10 @@ export default function ImageDetail() {
           </button>
         )}
 
-        {/* 次の画像ボタン（編集モードでない場合のみ） */}
-        {!isEditing && currentIndex < images.length - 1 && (
+        {/* 次の画像ボタン（編集モードでない場合、スライドショー非アクティブ時のみ） */}
+        {!isEditing && !isSlideshowActive && currentIndex < images.length - 1 && (
           <button
-            onClick={() => setSelectedImageId(images[currentIndex + 1].id)}
+            onClick={handleNext}
             style={{
               position: 'absolute',
               right: '16px',
@@ -204,6 +272,16 @@ export default function ImageDetail() {
           >
             <ChevronRight className="w-8 h-8" />
           </button>
+        )}
+
+        {/* スライドショーコントロール（スライドショーアクティブ時のみ） */}
+        {isSlideshowActive && !isEditing && (
+          <SlideshowControls
+            currentIndex={currentIndex}
+            totalCount={images.length}
+            onPrevious={handlePrevious}
+            onNext={handleNext}
+          />
         )}
 
         {/* メイン画像・動画表示エリア */}
@@ -226,19 +304,20 @@ export default function ImageDetail() {
               )}
             </div>
 
-            {/* メタデータパネル */}
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                width: '320px',
-                backgroundColor: '#1f2937',
-                color: 'white',
-                padding: '24px',
-                borderRadius: '8px',
-                overflowY: 'auto',
-                maxHeight: 'calc(100vh - 2rem)',
-              }}
-            >
+            {/* メタデータパネル（スライドショー非アクティブ時のみ） */}
+            {!isSlideshowActive && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                  width: '320px',
+                  backgroundColor: '#1f2937',
+                  color: 'white',
+                  padding: '24px',
+                  borderRadius: '8px',
+                  overflowY: 'auto',
+                  maxHeight: 'calc(100vh - 2rem)',
+                }}
+              >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 'bold', wordBreak: 'break-word', flex: 1 }}>
                   {selectedImage.file_name}
@@ -473,6 +552,7 @@ export default function ImageDetail() {
                 </div>
               </div>
             </div>
+            )}
           </div>
         </div>
       </div>
