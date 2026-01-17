@@ -42,12 +42,12 @@ function App() {
   }, [setError, setLoading]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Header />
 
       <main>
         {error && (
-          <div className="bg-red-100 text-red-700 p-4 rounded mb-4 mx-4">
+          <div className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded mb-4 mx-4">
             Error: {error}
           </div>
         )}
@@ -56,11 +56,11 @@ function App() {
 
         {!isLoading && currentDirectory && (
           <div className="px-4 pt-4 pb-2">
-            <p className="text-sm text-gray-600">
-              Current directory: <span className="font-medium">{currentDirectory}</span>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Current directory: <span className="font-medium dark:text-gray-300">{currentDirectory}</span>
             </p>
-            <p className="text-sm text-gray-600">
-              Images found: <span className="font-medium">{images.length}</span>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              Images found: <span className="font-medium dark:text-gray-300">{images.length}</span>
             </p>
           </div>
         )}

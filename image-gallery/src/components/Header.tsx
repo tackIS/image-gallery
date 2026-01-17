@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search } from 'lucide-react';
+import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import type { SortBy } from '../store/imageStore';
 import type { FileType } from '../types/image';
 import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
 import SettingsModal from './SettingsModal';
+import { useTheme } from '../hooks/useTheme';
 
 /**
  * アプリケーションヘッダーコンポーネント
@@ -31,6 +32,7 @@ export default function Header() {
   } = useImageStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const { theme, setTheme, resolvedTheme } = useTheme();
 
   const tagsWithCount = getTagsWithCount();
   const filteredImages = getSortedAndFilteredImages();
@@ -86,11 +88,11 @@ export default function Header() {
 
   return (
     <>
-      <header className="bg-white shadow-sm p-4 flex items-center justify-between">
+      <header className="bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Image Gallery</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Gallery</h1>
           {images.length > 0 && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {hasActiveFilters && `${filteredImages.length} / `}
               {imageCount} {imageCount === 1 ? 'image' : 'images'}
               {videoCount > 0 && (
@@ -104,21 +106,21 @@ export default function Header() {
         {images.length > 0 && (
           <div className="flex-1 max-w-md mx-4">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by filename..."
-                className="w-full pl-10 pr-10 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-10 pr-10 py-1.5 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                   aria-label="Clear search"
                 >
-                  <X size={16} className="text-gray-400" />
+                  <X size={16} className="text-gray-400 dark:text-gray-500" />
                 </button>
               )}
             </div>
@@ -134,8 +136,8 @@ export default function Header() {
                 onClick={() => setShowFilters(!showFilters)}
                 className={`flex items-center gap-2 px-3 py-1.5 border rounded transition-colors ${
                   hasActiveFilters
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-300 hover:bg-gray-50'
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                    : 'border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
                 }`}
                 aria-label="Toggle filters"
               >
@@ -153,12 +155,12 @@ export default function Header() {
 
               {/* フィルタードロップダウン */}
               {showFilters && (
-                <div className="absolute top-full mt-2 right-0 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50 min-w-[300px]">
+                <div className="absolute top-full mt-2 right-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg p-4 z-50 min-w-[300px]">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-semibold text-gray-900">Filters</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-gray-100">Filters</h3>
                     <button
                       onClick={() => setShowFilters(false)}
-                      className="p-1 hover:bg-gray-100 rounded"
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300"
                     >
                       <X size={16} />
                     </button>
@@ -175,13 +177,13 @@ export default function Header() {
                         }
                         className="w-4 h-4"
                       />
-                      <span className="text-sm text-gray-700">Show only favorites</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Show only favorites</span>
                     </label>
                   </div>
 
                   {/* ファイルタイプフィルター */}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       File Type
                     </label>
                     <select
@@ -189,7 +191,7 @@ export default function Header() {
                       onChange={(e) =>
                         setFilterSettings({ fileType: e.target.value as FileType | 'all' })
                       }
-                      className="w-full px-3 py-1.5 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                     >
                       <option value="all">All</option>
                       <option value="image">Images only</option>
@@ -199,7 +201,7 @@ export default function Header() {
 
                   {/* 評価フィルター */}
                   <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Minimum Rating: {filterSettings.minRating}
                     </label>
                     <input
@@ -218,12 +220,12 @@ export default function Header() {
                   {tagsWithCount.length > 0 && (
                     <div className="mb-4">
                       <div className="flex items-center justify-between mb-2">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                           Tags
                         </label>
                         {filterSettings.selectedTags.length > 0 && (
                           <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">Match:</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">Match:</span>
                             <button
                               onClick={() =>
                                 setFilterSettings({
@@ -231,7 +233,7 @@ export default function Header() {
                                     filterSettings.tagFilterMode === 'any' ? 'all' : 'any',
                                 })
                               }
-                              className="text-xs px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded transition-colors"
+                              className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors text-gray-700 dark:text-gray-300"
                             >
                               {filterSettings.tagFilterMode === 'any' ? 'ANY' : 'ALL'}
                             </button>
@@ -246,14 +248,14 @@ export default function Header() {
                             className={`px-2 py-1 text-xs rounded transition-colors flex items-center gap-1 ${
                               filterSettings.selectedTags.includes(tag)
                                 ? 'bg-blue-500 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
                             <span>{tag}</span>
                             <span className={`text-xs ${
                               filterSettings.selectedTags.includes(tag)
                                 ? 'text-blue-100'
-                                : 'text-gray-500'
+                                : 'text-gray-500 dark:text-gray-400'
                             }`}>
                               ({count})
                             </span>
@@ -267,7 +269,7 @@ export default function Header() {
                   {hasActiveFilters && (
                     <button
                       onClick={resetFilters}
-                      className="w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded transition-colors"
+                      className="w-full px-3 py-1.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                     >
                       Reset Filters
                     </button>
@@ -278,11 +280,11 @@ export default function Header() {
 
             {/* ソートコントロール */}
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600">Sort:</label>
+              <label className="text-sm text-gray-600 dark:text-gray-400">Sort:</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortBy)}
-                className="px-3 py-1.5 border border-gray-300 rounded hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
                 <option value="name">Name</option>
                 <option value="created_at">Date</option>
@@ -290,7 +292,7 @@ export default function Header() {
               </select>
               <button
                 onClick={handleToggleSortOrder}
-                className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
                 aria-label={`Sort ${sortOrder === 'asc' ? 'ascending' : 'descending'}`}
                 title={`${sortOrder === 'asc' ? 'Ascending' : 'Descending'}`}
               >
@@ -303,8 +305,21 @@ export default function Header() {
 
         <div className="flex items-center gap-2">
           <button
+            onClick={() => {
+              const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
+              const currentIndex = themes.indexOf(theme);
+              const nextIndex = (currentIndex + 1) % themes.length;
+              setTheme(themes[nextIndex]);
+            }}
+            className="p-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            aria-label={`Current theme: ${theme}. Click to change.`}
+            title={`Theme: ${theme}`}
+          >
+            {resolvedTheme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          <button
             onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded hover:bg-gray-200 transition-colors"
+            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             aria-label="Settings"
           >
             <Settings size={20} />
@@ -312,7 +327,7 @@ export default function Header() {
           </button>
           <button
             onClick={handleSelectDirectory}
-            className="flex items-center gap-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
+            className="flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
           >
             <FolderOpen size={20} />
             Select Directory
