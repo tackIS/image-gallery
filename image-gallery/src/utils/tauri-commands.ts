@@ -154,17 +154,6 @@ export async function getAllImages(): Promise<ImageData[]> {
 }
 
 /**
- * 指定されたIDの画像データを取得します
- * @param _id 画像ID
- * @returns 画像データ、または見つからない場合はnull
- * @todo ステップ6で実装
- */
-export async function getImageById(_id: number): Promise<ImageData | null> {
-  // TODO: ステップ6で実装
-  throw new Error('getImageById not yet implemented - will be added in Step 6');
-}
-
-/**
  * 画像のメタデータを更新します
  * @param data 更新するメタデータ
  */
