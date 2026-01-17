@@ -135,7 +135,14 @@ export async function getAllImages(): Promise<ImageData[]> {
       file_name: row.file_name,
       file_type: (row.file_type as 'image' | 'video') || 'image',
       comment: row.comment,
-      tags: row.tags ? JSON.parse(row.tags) : [],
+      tags: row.tags ? (() => {
+        try {
+          return JSON.parse(row.tags);
+        } catch (e) {
+          console.error('Failed to parse tags for image:', row.id, e);
+          return [];
+        }
+      })() : [],
       rating: row.rating,
       is_favorite: row.is_favorite,
       created_at: row.created_at,
