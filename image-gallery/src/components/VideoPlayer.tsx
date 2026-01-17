@@ -76,9 +76,13 @@ export default function VideoPlayer({ src }: VideoPlayerProps) {
     if (!video) return;
 
     if (document.fullscreenElement) {
-      document.exitFullscreen();
+      document.exitFullscreen().catch((error) => {
+        console.error('Failed to exit fullscreen:', error);
+      });
     } else {
-      video.requestFullscreen();
+      video.requestFullscreen().catch((error) => {
+        console.error('Failed to enter fullscreen:', error);
+      });
     }
   };
 
