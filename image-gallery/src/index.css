@@ -1,72 +1,69 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@theme {
+  --color-*: initial;
+  --color-gray-50: oklch(0.985 0 0);
+  --color-gray-100: oklch(0.97 0 0);
+  --color-gray-200: oklch(0.922 0 0);
+  --color-gray-300: oklch(0.871 0 0);
+  --color-gray-400: oklch(0.702 0 0);
+  --color-gray-500: oklch(0.553 0 0);
+  --color-gray-600: oklch(0.446 0 0);
+  --color-gray-700: oklch(0.373 0 0);
+  --color-gray-800: oklch(0.267 0 0);
+  --color-gray-900: oklch(0.156 0 0);
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  --color-blue-50: oklch(0.97 0.01 240);
+  --color-blue-100: oklch(0.95 0.02 240);
+  --color-blue-200: oklch(0.9 0.04 240);
+  --color-blue-300: oklch(0.8 0.08 240);
+  --color-blue-400: oklch(0.7 0.15 240);
+  --color-blue-500: oklch(0.6 0.2 240);
+  --color-blue-600: oklch(0.5 0.2 240);
+  --color-blue-700: oklch(0.4 0.15 240);
+  --color-blue-800: oklch(0.3 0.1 240);
+  --color-blue-900: oklch(0.2 0.05 240);
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --color-red-50: oklch(0.97 0.01 20);
+  --color-red-100: oklch(0.95 0.03 20);
+  --color-red-200: oklch(0.9 0.06 20);
+  --color-red-300: oklch(0.8 0.12 20);
+  --color-red-400: oklch(0.7 0.18 20);
+  --color-red-500: oklch(0.6 0.22 20);
+  --color-red-600: oklch(0.5 0.22 20);
+  --color-red-700: oklch(0.4 0.18 20);
+  --color-red-800: oklch(0.3 0.12 20);
+  --color-red-900: oklch(0.2 0.06 20);
+
+  --color-green-50: oklch(0.97 0.01 140);
+  --color-green-100: oklch(0.95 0.03 140);
+  --color-green-200: oklch(0.9 0.06 140);
+  --color-green-300: oklch(0.8 0.12 140);
+  --color-green-400: oklch(0.7 0.18 140);
+  --color-green-500: oklch(0.6 0.22 140);
+  --color-green-600: oklch(0.5 0.22 140);
+  --color-green-700: oklch(0.4 0.18 140);
+  --color-green-800: oklch(0.3 0.12 140);
+  --color-green-900: oklch(0.2 0.06 140);
+
+  --color-yellow-50: oklch(0.97 0.01 90);
+  --color-yellow-100: oklch(0.95 0.03 90);
+  --color-yellow-200: oklch(0.9 0.08 90);
+  --color-yellow-300: oklch(0.85 0.14 90);
+  --color-yellow-400: oklch(0.8 0.18 90);
+  --color-yellow-500: oklch(0.75 0.2 90);
+  --color-yellow-600: oklch(0.65 0.18 90);
+  --color-yellow-700: oklch(0.55 0.14 90);
+  --color-yellow-800: oklch(0.45 0.1 90);
+  --color-yellow-900: oklch(0.35 0.06 90);
+
+  --color-white: oklch(1 0 0);
+  --color-black: oklch(0 0 0);
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
+@variant dark (&:where(.dark, .dark *));
 
+/* 最低限のグローバルスタイルのみ */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }
