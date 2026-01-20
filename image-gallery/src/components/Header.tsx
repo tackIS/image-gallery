@@ -303,7 +303,7 @@ export default function Header() {
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => {
               const themes: Array<'light' | 'dark' | 'system'> = ['light', 'dark', 'system'];
@@ -319,18 +319,18 @@ export default function Header() {
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="flex items-center gap-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 sm:px-4 py-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             aria-label="Settings"
           >
             <Settings size={20} />
-            Settings
+            <span className="hidden sm:inline">Settings</span>
           </button>
           <button
             onClick={handleSelectDirectory}
-            className="flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white px-2 sm:px-4 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
           >
             <FolderOpen size={20} />
-            Select Directory
+            <span className="hidden sm:inline">Select Directory</span>
           </button>
         </div>
       </header>
