@@ -16,6 +16,7 @@
   - お気に入りのみ表示
 - **ソート機能**: 名前、作成日時、評価による並び替え（昇順/降順）
 - **ダークモード**: システム設定に応じた自動切り替え、手動トグル機能
+- **レスポンシブ対応**: モバイル、タブレット、デスクトップに最適化されたUI（開発時のプレビューに対応）
 - **スライドショー**: 自動再生、速度調整（3秒/5秒/10秒）、前後スキップ
 - **データ永続化**: SQLiteによるメタデータ管理
 - **エラーハンドリング**: メディアファイル読み込みエラーの適切な処理
@@ -37,7 +38,7 @@
 - React 19.2.0
 - TypeScript
 - Vite 7
-- Tailwind CSS
+- Tailwind CSS v4 ⚠️ (v3とは構文が異なります - [CLAUDE.md](./CLAUDE.md)参照)
 - Zustand (状態管理)
 - React Router (ルーティング)
 - lucide-react (アイコン)
@@ -97,12 +98,19 @@ image-gallery/
     │   │   ├── MediaCard.tsx      # メディアカード（画像/動画）
     │   │   ├── ImageDetail.tsx    # 詳細モーダル
     │   │   ├── VideoPlayer.tsx    # カスタム動画プレイヤー
+    │   │   ├── SettingsModal.tsx  # 設定モーダル
+    │   │   ├── SlideshowControls.tsx # スライドショーコントロール
+    │   │   ├── ErrorBoundary.tsx  # エラーバウンダリ
     │   │   ├── EmptyState.tsx     # 空状態表示
     │   │   └── LoadingSpinner.tsx # ローディング表示
+    │   ├── hooks/                 # カスタムフック
+    │   │   └── useTheme.ts        # テーマ管理フック
     │   ├── store/                 # Zustand状態管理
     │   ├── types/                 # TypeScript型定義
     │   ├── utils/                 # ユーティリティ関数
-    │   └── App.tsx                # アプリケーションルート
+    │   ├── App.tsx                # アプリケーションルート
+    │   ├── index.css              # グローバルスタイル（Tailwind設定）
+    │   └── main.tsx               # エントリーポイント
     ├── src-tauri/                 # Tauri バックエンドコード（Rust）
     │   ├── src/
     │   │   ├── main.rs            # エントリーポイント
@@ -110,6 +118,7 @@ image-gallery/
     │   │   ├── db.rs              # データベース管理
     │   │   └── fs_utils.rs        # ファイルシステムユーティリティ
     │   └── tauri.conf.json        # Tauri設定
+    ├── CLAUDE.md                  # Claude Code 開発ガイド
     └── README.md                  # このファイル
 ```
 
@@ -207,6 +216,29 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ## トラブルシューティング
 
+### Tailwind CSSのスタイルが効かない
+
+**症状**: ボタンの色やダークモードが正しく表示されない
+
+**原因**: `src/index.css` に不要なグローバルスタイルが混入している可能性
+
+**解決方法**:
+- [CLAUDE.md](./CLAUDE.md) のトラブルシューティングセクションを参照
+- `src/index.css` は以下の構造であるべき：
+  ```css
+  @import "tailwindcss";
+
+  @theme {
+    /* 色パレット定義 */
+  }
+
+  @variant dark (&:where(.dark, .dark *));
+
+  body {
+    margin: 0;
+  }
+  ```
+
 ### 「no such column: file_type」エラーが発生する
 
 **症状**: ディレクトリを選択すると「error returned from database: (code: 1) no such column: file_type」というエラーが表示される
@@ -256,6 +288,57 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
    npm run tauri:dev
    ```
 
+## 開発者向け情報
+
+### Claude Codeでの開発
+
+このプロジェクトはClaude Codeでの開発に最適化されています。開発を始める前に **[CLAUDE.md](./CLAUDE.md)** を必ずお読みください。
+
+**CLAUDE.mdの内容:**
+- プロジェクト構造の詳細説明
+- Tailwind CSS v4の重要な注意点
+- ダークモード対応のガイドライン
+- コーディング規約
+- 開発ワークフロー
+- トラブルシューティング
+- Claude Codeとの協働のコツ
+
+### 開発ワークフロー
+
+```bash
+# 1. mainブランチから最新を取得
+git checkout main && git pull
+
+# 2. featureブランチを作成
+git checkout -b feature/new-feature-name
+
+# 3. 開発
+npm run dev  # または npm run tauri:dev
+
+# 4. コミット（Conventional Commits形式）
+git commit -m "feat: 新機能の説明
+
+詳細な説明...
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+
+# 5. プッシュ & PR作成
+git push -u origin feature/new-feature-name
+gh pr create --title "タイトル" --body "説明" --base main
+```
+
+### コミットメッセージ規約
+
+- `feat:` - 新機能
+- `fix:` - バグ修正
+- `docs:` - ドキュメント更新
+- `style:` - スタイル修正
+- `refactor:` - リファクタリング
+- `test:` - テスト追加・修正
+- `chore:` - ビルドプロセス、補助ツールの変更
+
+詳細は [CLAUDE.md](./CLAUDE.md) を参照してください。
+
 ## ライセンス
 
 このプロジェクトはMITライセンスの下で公開されています。
@@ -264,7 +347,15 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 プルリクエストやイシューの報告を歓迎します。
 
+**貢献する前に:**
+1. [CLAUDE.md](./CLAUDE.md) を読んで、プロジェクトの構造とコーディング規約を理解してください
+2. 大きな変更の場合は、まずIssueを作成して議論することを推奨します
+3. コミットメッセージはConventional Commits形式に従ってください
+4. ダークモード対応とレスポンシブ対応を忘れずに実装してください
+
 ## 今後の予定
 
 - 他の動画フォーマット対応（MOV, AVI, MKVなど）
 - 動画サムネイル生成機能
+- キーボードショートカット
+- 画像編集機能（回転、トリミング）
