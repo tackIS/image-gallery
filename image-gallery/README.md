@@ -93,31 +93,31 @@ image-gallery/                     # リポジトリルート
 └── image-gallery/                 # アプリケーション本体
     ├── src/                       # React フロントエンドコード
     │   ├── components/            # UIコンポーネント
-    │   │   ├── Header.tsx         # ヘッダー（ディレクトリ選択、統計表示）
-    │   │   ├── ImageGrid.tsx      # グリッド表示
-    │   │   ├── MediaCard.tsx      # メディアカード（画像/動画）
-    │   │   ├── ImageDetail.tsx    # 詳細モーダル
-    │   │   ├── VideoPlayer.tsx    # カスタム動画プレイヤー
-    │   │   ├── SettingsModal.tsx  # 設定モーダル
-    │   │   ├── SlideshowControls.tsx # スライドショーコントロール
-    │   │   ├── ErrorBoundary.tsx  # エラーバウンダリ
-    │   │   ├── EmptyState.tsx     # 空状態表示
-    │   │   └── LoadingSpinner.tsx # ローディング表示
+    │   │   ├── Header             # ヘッダー（ディレクトリ選択、統計表示）
+    │   │   ├── ImageGrid          # グリッド表示
+    │   │   ├── MediaCard          # メディアカード（画像/動画）
+    │   │   ├── ImageDetail        # 詳細モーダル
+    │   │   ├── VideoPlayer        # カスタム動画プレイヤー
+    │   │   ├── SettingsModal      # 設定モーダル
+    │   │   ├── SlideshowControls  # スライドショーコントロール
+    │   │   ├── ErrorBoundary      # エラーバウンダリ
+    │   │   ├── EmptyState         # 空状態表示
+    │   │   └── LoadingSpinner     # ローディング表示
     │   ├── hooks/                 # カスタムフック
-    │   │   └── useTheme.ts        # テーマ管理フック
+    │   │   └── useTheme           # テーマ管理フック
     │   ├── store/                 # Zustand状態管理
     │   ├── types/                 # TypeScript型定義
     │   ├── utils/                 # ユーティリティ関数
-    │   ├── App.tsx                # アプリケーションルート
-    │   ├── index.css              # グローバルスタイル（Tailwind設定）
-    │   └── main.tsx               # エントリーポイント
+    │   ├── App                    # アプリケーションルート
+    │   ├── index                  # グローバルスタイル（Tailwind設定）
+    │   └── main                   # エントリーポイント
     ├── src-tauri/                 # Tauri バックエンドコード（Rust）
     │   ├── src/
-    │   │   ├── main.rs            # エントリーポイント
-    │   │   ├── commands.rs        # Tauriコマンド定義
-    │   │   ├── db.rs              # データベース管理
-    │   │   └── fs_utils.rs        # ファイルシステムユーティリティ
-    │   └── tauri.conf.json        # Tauri設定
+    │   │   ├── main               # エントリーポイント
+    │   │   ├── commands           # Tauriコマンド定義
+    │   │   ├── db                 # データベース管理
+    │   │   └── fs_utils           # ファイルシステムユーティリティ
+    │   └── tauri.conf             # Tauri設定
     ├── CLAUDE                     # Claude Code 開発ガイド
     └── README                     # このファイル
 ```
