@@ -30,7 +30,7 @@ cd image-gallery
 npm install
 ```
 
-## 開発
+  ## 開発
 
 ```bash
 npm run tauri:dev
@@ -44,8 +44,9 @@ npm run tauri:build
 
 ## ドキュメント
 
-- [要件定義](./doc/requiment.md)
-- [実装プラン](./doc/implementation-plan.md)
+- [要件定義](./doc/01_requirement.md)
+- [Phase 1 実装プラン (MP4対応)](./doc/02_mp4-support-plan.md)
+- [Phase 2 開発提案](./doc/03_phase2-proposal.md)
 
 ## ライセンス
 
