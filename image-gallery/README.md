@@ -118,8 +118,8 @@ image-gallery/                     # リポジトリルート
     │   │   ├── db.rs              # データベース管理
     │   │   └── fs_utils.rs        # ファイルシステムユーティリティ
     │   └── tauri.conf.json        # Tauri設定
-    ├── CLAUDE.md                  # Claude Code 開発ガイド
-    └── README.md                  # このファイル
+    ├── CLAUDE                     # Claude Code 開発ガイド
+    └── README                     # このファイル
 ```
 
 ## 使い方
@@ -294,7 +294,7 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 このプロジェクトはClaude Codeでの開発に最適化されています。開発を始める前に **[CLAUDE.md](./CLAUDE.md)** を必ずお読みください。
 
-**CLAUDE.mdの内容:**
+**CLAUDEガイドの内容:**
 - プロジェクト構造の詳細説明
 - Tailwind CSS v4の重要な注意点
 - ダークモード対応のガイドライン
