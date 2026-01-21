@@ -85,12 +85,12 @@ npm run tauri:build
 ## プロジェクト構成
 
 ```
-image-gallery/
-├── doc/                           # ドキュメント
-│   ├── 01_requirement.md          # 要件定義
-│   ├── 02_mp4-support-plan.md     # Phase 1 実装プラン
-│   └── 03_phase2-proposal.md      # Phase 2 開発提案
-└── image-gallery/
+image-gallery/                     # リポジトリルート
+├── doc/                           # ドキュメント（プロジェクト計画・要件定義）
+│   ├── 01_requirement             # 要件定義
+│   ├── 02_mp4-support-plan        # Phase 1 実装プラン
+│   └── 03_phase2-proposal         # Phase 2 開発提案
+└── image-gallery/                 # アプリケーション本体
     ├── src/                       # React フロントエンドコード
     │   ├── components/            # UIコンポーネント
     │   │   ├── Header.tsx         # ヘッダー（ディレクトリ選択、統計表示）
