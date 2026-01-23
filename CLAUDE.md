@@ -344,9 +344,9 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ### プロジェクト内ドキュメント
 - [README.md](./README.md) - プロジェクト概要
-- [doc/01_requirement.md](../doc/01_requirement.md) - 要件定義
-- [doc/02_mp4-support-plan.md](../doc/02_mp4-support-plan.md) - Phase 1プラン
-- [doc/03_phase2-proposal.md](../doc/03_phase2-proposal.md) - Phase 2提案
+- [doc/01_requirement.md](./doc/01_requirement.md) - 要件定義
+- [doc/02_mp4-support-plan.md](./doc/02_mp4-support-plan.md) - Phase 1プラン
+- [doc/03_phase2-proposal.md](./doc/03_phase2-proposal.md) - Phase 2提案
 
 ## Claude Codeとの協働のコツ
 
