@@ -28,7 +28,7 @@
 ### プロジェクト構造
 
 ```
-image-gallery/
+image-gallery/                     # リポジトリルート
 ├── doc/                          # 設計ドキュメント
 │   ├── 01_requirement.md          # 要件定義
 │   ├── 02_mp4-support-plan.md     # Phase 1 実装プラン
@@ -41,16 +41,18 @@ image-gallery/
 │   │   ├── ImageDetail.tsx       # 詳細モーダル
 │   │   ├── VideoPlayer.tsx       # カスタム動画プレイヤー
 │   │   ├── SettingsModal.tsx     # 設定モーダル
+│   │   ├── SlideshowControls.tsx # スライドショーコントロール
+│   │   ├── ErrorBoundary.tsx     # エラーバウンダリ
 │   │   ├── EmptyState.tsx        # 空状態表示
 │   │   └── LoadingSpinner.tsx    # ローディング表示
+│   ├── hooks/                    # カスタムフック
+│   │   └── useTheme.ts           # テーマ管理フック
 │   ├── store/                    # Zustand状態管理
 │   │   └── imageStore.ts         # メイン状態ストア
 │   ├── types/                    # TypeScript型定義
 │   │   └── image.ts              # メディアファイル型
 │   ├── utils/                    # ユーティリティ
 │   │   └── tauri-commands.ts     # Tauri APIラッパー
-│   ├── hooks/                    # カスタムフック
-│   │   └── useTheme.ts           # テーマ管理フック
 │   ├── App.tsx                   # アプリケーションルート
 │   ├── index.css                 # グローバルスタイル（Tailwind設定）
 │   └── main.tsx                  # エントリーポイント
@@ -61,8 +63,19 @@ image-gallery/
 │   │   ├── db.rs                 # データベース管理
 │   │   └── fs_utils.rs           # ファイルシステムユーティリティ
 │   └── tauri.conf.json           # Tauri設定
+├── public/                       # 静的アセット
+│   └── vite.svg
+├── package.json                  # npm設定
+├── package-lock.json             # npm依存関係ロック
+├── vite.config.ts                # Vite設定
+├── tsconfig.json                 # TypeScript設定（ベース）
+├── tsconfig.app.json             # TypeScript設定（アプリ）
+├── tsconfig.node.json            # TypeScript設定（Node）
+├── eslint.config.js              # ESLint設定
 ├── tailwind.config.js            # Tailwind設定
 ├── postcss.config.js             # PostCSS設定
+├── index.html                    # HTMLエントリーポイント
+├── CLAUDE.md                     # このファイル（開発ガイド）
 └── README.md                     # プロジェクト説明
 ```
 
@@ -344,9 +357,9 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ### プロジェクト内ドキュメント
 - [README.md](./README.md) - プロジェクト概要
-- [doc/01_requirement.md](../doc/01_requirement.md) - 要件定義
-- [doc/02_mp4-support-plan.md](../doc/02_mp4-support-plan.md) - Phase 1プラン
-- [doc/03_phase2-proposal.md](../doc/03_phase2-proposal.md) - Phase 2提案
+- [doc/01_requirement.md](./doc/01_requirement.md) - 要件定義
+- [doc/02_mp4-support-plan.md](./doc/02_mp4-support-plan.md) - Phase 1プラン
+- [doc/03_phase2-proposal.md](./doc/03_phase2-proposal.md) - Phase 2提案
 
 ## Claude Codeとの協働のコツ
 

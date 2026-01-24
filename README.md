@@ -38,7 +38,7 @@
 - React 19.2.0
 - TypeScript
 - Vite 7
-- Tailwind CSS v4 ⚠️ (v3とは構文が異なります - [CLAUDE.md](./image-gallery/CLAUDE.md)参照)
+- Tailwind CSS v4 ⚠️ (v3とは構文が異なります - [CLAUDE.md](./CLAUDE.md)参照)
 - Zustand (状態管理)
 - React Router (ルーティング)
 - lucide-react (アイコン)
@@ -90,36 +90,37 @@ image-gallery/                     # リポジトリルート
 │   ├── 01_requirement             # 要件定義
 │   ├── 02_mp4-support-plan        # Phase 1 実装プラン
 │   └── 03_phase2-proposal         # Phase 2 開発提案
-└── image-gallery/                 # アプリケーション本体
-    ├── src/                       # React フロントエンドコード
-    │   ├── components/            # UIコンポーネント
-    │   │   ├── Header             # ヘッダー（ディレクトリ選択、統計表示）
-    │   │   ├── ImageGrid          # グリッド表示
-    │   │   ├── MediaCard          # メディアカード（画像/動画）
-    │   │   ├── ImageDetail        # 詳細モーダル
-    │   │   ├── VideoPlayer        # カスタム動画プレイヤー
-    │   │   ├── SettingsModal      # 設定モーダル
-    │   │   ├── SlideshowControls  # スライドショーコントロール
-    │   │   ├── ErrorBoundary      # エラーバウンダリ
-    │   │   ├── EmptyState         # 空状態表示
-    │   │   └── LoadingSpinner     # ローディング表示
-    │   ├── hooks/                 # カスタムフック
-    │   │   └── useTheme           # テーマ管理フック
-    │   ├── store/                 # Zustand状態管理
-    │   ├── types/                 # TypeScript型定義
-    │   ├── utils/                 # ユーティリティ関数
-    │   ├── App                    # アプリケーションルート
-    │   ├── index                  # グローバルスタイル（Tailwind設定）
-    │   └── main                   # エントリーポイント
-    ├── src-tauri/                 # Tauri バックエンドコード（Rust）
-    │   ├── src/
-    │   │   ├── main               # エントリーポイント
-    │   │   ├── commands           # Tauriコマンド定義
-    │   │   ├── db                 # データベース管理
-    │   │   └── fs_utils           # ファイルシステムユーティリティ
-    │   └── tauri.conf             # Tauri設定
-    ├── CLAUDE                     # Claude Code 開発ガイド
-
+├── src/                           # React フロントエンドコード
+│   ├── components/                # UIコンポーネント
+│   │   ├── Header                 # ヘッダー（ディレクトリ選択、統計表示）
+│   │   ├── ImageGrid              # グリッド表示
+│   │   ├── MediaCard              # メディアカード（画像/動画）
+│   │   ├── ImageDetail            # 詳細モーダル
+│   │   ├── VideoPlayer            # カスタム動画プレイヤー
+│   │   ├── SettingsModal          # 設定モーダル
+│   │   ├── SlideshowControls      # スライドショーコントロール
+│   │   ├── ErrorBoundary          # エラーバウンダリ
+│   │   ├── EmptyState             # 空状態表示
+│   │   └── LoadingSpinner         # ローディング表示
+│   ├── hooks/                     # カスタムフック
+│   │   └── useTheme               # テーマ管理フック
+│   ├── store/                     # Zustand状態管理
+│   ├── types/                     # TypeScript型定義
+│   ├── utils/                     # ユーティリティ関数
+│   ├── App                        # アプリケーションルート
+│   ├── index                      # グローバルスタイル（Tailwind設定）
+│   └── main                       # エントリーポイント
+├── src-tauri/                     # Tauri バックエンドコード（Rust）
+│   ├── src/
+│   │   ├── main                   # エントリーポイント
+│   │   ├── commands               # Tauriコマンド定義
+│   │   ├── db                     # データベース管理
+│   │   └── fs_utils               # ファイルシステムユーティリティ
+│   └── tauri.conf                 # Tauri設定
+├── CLAUDE                         # Claude Code 開発ガイド
+├── README                         # このファイル
+├── package.json                   # npm設定
+└── vite.config                    # Vite設定
 ```
 
 ## 使い方
@@ -223,7 +224,7 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 **原因**: `src/index.css` に不要なグローバルスタイルが混入している可能性
 
 **解決方法**:
-- [CLAUDE.md](./image-gallery/CLAUDE.md) のトラブルシューティングセクションを参照
+- [CLAUDE.md](./CLAUDE.md) のトラブルシューティングセクションを参照
 - `src/index.css` は以下の構造であるべき：
   ```css
   @import "tailwindcss";
@@ -292,7 +293,7 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ### Claude Codeでの開発
 
-このプロジェクトはClaude Codeでの開発に最適化されています。開発を始める前に **[CLAUDE.md](./image-gallery/CLAUDE.md)** を必ずお読みください。
+このプロジェクトはClaude Codeでの開発に最適化されています。開発を始める前に **[CLAUDE.md](./CLAUDE.md)** を必ずお読みください。
 
 **CLAUDEガイドの内容:**
 - プロジェクト構造の詳細説明
@@ -337,7 +338,7 @@ gh pr create --title "タイトル" --body "説明" --base main
 - `test:` - テスト追加・修正
 - `chore:` - ビルドプロセス、補助ツールの変更
 
-詳細は [CLAUDE.md](./image-gallery/CLAUDE.md) を参照してください。
+詳細は [CLAUDE.md](./CLAUDE.md) を参照してください。
 
 ## ライセンス
 
@@ -348,7 +349,7 @@ gh pr create --title "タイトル" --body "説明" --base main
 プルリクエストやイシューの報告を歓迎します。
 
 **貢献する前に:**
-1. [CLAUDE.md](./image-gallery/CLAUDE.md) を読んで、プロジェクトの構造とコーディング規約を理解してください
+1. [CLAUDE.md](./CLAUDE.md) を読んで、プロジェクトの構造とコーディング規約を理解してください
 2. 大きな変更の場合は、まずIssueを作成して議論することを推奨します
 3. コミットメッセージはConventional Commits形式に従ってください
 4. ダークモード対応とレスポンシブ対応を忘れずに実装してください
