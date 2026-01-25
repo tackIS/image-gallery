@@ -79,6 +79,22 @@ pub fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_is_favorite ON images(is_favorite);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 4,
+            description: "add_video_metadata_columns",
+            sql: "
+                ALTER TABLE images ADD COLUMN duration_seconds REAL;
+                ALTER TABLE images ADD COLUMN width INTEGER;
+                ALTER TABLE images ADD COLUMN height INTEGER;
+                ALTER TABLE images ADD COLUMN video_codec TEXT;
+                ALTER TABLE images ADD COLUMN audio_codec TEXT;
+                ALTER TABLE images ADD COLUMN thumbnail_path TEXT;
+
+                CREATE INDEX IF NOT EXISTS idx_duration ON images(duration_seconds);
+                CREATE INDEX IF NOT EXISTS idx_resolution ON images(width, height);
+            ",
+            kind: MigrationKind::Up,
         }
     ]
 }

@@ -9,6 +9,13 @@ interface ImageFileInfo {
   file_path: string;
   file_name: string;
   file_type: string;
+
+  // Phase 3追加
+  duration_seconds?: number;
+  width?: number;
+  height?: number;
+  video_codec?: string;
+  audio_codec?: string;
 }
 
 /**
@@ -90,10 +97,19 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
       );
 
       if (existing[0].count === 0) {
-        // 存在しない場合は挿入（file_typeはバックエンドで判定済み）
+        // 存在しない場合は挿入（file_typeとメタデータはバックエンドで判定済み）
         await db.execute(
-          'INSERT INTO images (file_path, file_name, file_type) VALUES ($1, $2, $3)',
-          [fileInfo.file_path, fileInfo.file_name, fileInfo.file_type]
+          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+          [
+            fileInfo.file_path,
+            fileInfo.file_name,
+            fileInfo.file_type,
+            fileInfo.duration_seconds || null,
+            fileInfo.width || null,
+            fileInfo.height || null,
+            fileInfo.video_codec || null,
+            fileInfo.audio_codec || null,
+          ]
         );
       }
     }
@@ -124,8 +140,14 @@ export async function getAllImages(): Promise<ImageData[]> {
       is_favorite: number;
       created_at: string;
       updated_at: string;
+      duration_seconds: number | null;
+      width: number | null;
+      height: number | null;
+      video_codec: string | null;
+      audio_codec: string | null;
+      thumbnail_path: string | null;
     }>>(
-      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at FROM images ORDER BY created_at DESC'
+      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path FROM images ORDER BY created_at DESC'
     );
 
     // tagsをJSON文字列から配列にパース
@@ -147,6 +169,12 @@ export async function getAllImages(): Promise<ImageData[]> {
       is_favorite: row.is_favorite,
       created_at: row.created_at,
       updated_at: row.updated_at,
+      duration_seconds: row.duration_seconds,
+      width: row.width,
+      height: row.height,
+      video_codec: row.video_codec,
+      audio_codec: row.audio_codec,
+      thumbnail_path: row.thumbnail_path,
     }));
   } finally {
     await db.close();
@@ -200,4 +228,30 @@ export async function updateImageMetadata(
   } finally {
     await db.close();
   }
+}
+
+/**
+ * ffmpegが利用可能かチェックします
+ * @returns ffmpegのパスとバージョン情報
+ * @throws ffmpegが見つからない場合
+ */
+export async function checkFFmpegAvailable(): Promise<string> {
+  return await invoke<string>('check_ffmpeg_available');
+}
+
+/**
+ * 動画のサムネイルを生成します
+ * @param videoPath 動画ファイルのパス
+ * @param imageId 画像ID
+ * @returns サムネイル画像のパス
+ * @throws サムネイル生成に失敗した場合
+ */
+export async function generateVideoThumbnail(
+  videoPath: string,
+  imageId: number
+): Promise<string> {
+  return await invoke<string>('generate_video_thumbnail', {
+    videoPath,
+    imageId,
+  });
 }

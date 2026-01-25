@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import Database from '@tauri-apps/plugin-sql';
 import { useImageStore } from './store/imageStore';
 import { initializeDatabase, getDatabasePath } from './utils/tauri-commands';
 import Header from './components/Header';
@@ -16,21 +15,13 @@ function App() {
       try {
         setLoading(true);
 
-        // データベースパスを取得
+        // データベースパスを取得（ディレクトリ作成のみ）
         const dbPath = await getDatabasePath();
         console.log('Database path:', dbPath);
 
-        // データベースに接続（マイグレーションが自動実行される）
-        const dbUrl = `sqlite:${dbPath}`;
-        console.log('Connecting to database:', dbUrl);
-        const db = await Database.load(dbUrl);
-
-        // データベース初期化
+        // データベース初期化（Tauriが自動でマイグレーションを実行）
         await initializeDatabase();
         console.log('Database initialized successfully');
-
-        // データベース接続をクローズ
-        await db.close();
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         console.error('Database initialization error:', err);

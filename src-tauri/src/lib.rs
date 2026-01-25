@@ -1,6 +1,7 @@
 mod db;
 mod commands;
 mod fs_utils;
+mod video_utils;
 
 use commands::*;
 
@@ -38,6 +39,8 @@ pub fn run() {
       reset_database,
       select_directory,
       scan_directory,
+      video_utils::check_ffmpeg_available,
+      video_utils::generate_video_thumbnail,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

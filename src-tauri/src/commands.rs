@@ -94,10 +94,23 @@ pub async fn scan_directory(
         .map(|file_path| {
             let file_name = crate::fs_utils::get_file_name(&file_path);
             let file_type = crate::fs_utils::get_file_type(&file_path);
+
+            // 動画の場合のみメタデータ抽出
+            let metadata = if file_type == "video" {
+                crate::video_utils::extract_video_metadata(&file_path).ok()
+            } else {
+                None
+            };
+
             ImageFileInfo {
                 file_path,
                 file_name,
                 file_type,
+                duration_seconds: metadata.as_ref().map(|m| m.duration_seconds),
+                width: metadata.as_ref().map(|m| m.width),
+                height: metadata.as_ref().map(|m| m.height),
+                video_codec: metadata.as_ref().map(|m| m.video_codec.clone()),
+                audio_codec: metadata.as_ref().and_then(|m| m.audio_codec.clone()),
             }
         })
         .collect();
@@ -112,4 +125,11 @@ pub struct ImageFileInfo {
     pub file_path: String,
     pub file_name: String,
     pub file_type: String,
+
+    // Phase 3追加
+    pub duration_seconds: Option<f64>,
+    pub width: Option<i32>,
+    pub height: Option<i32>,
+    pub video_codec: Option<String>,
+    pub audio_codec: Option<String>,
 }

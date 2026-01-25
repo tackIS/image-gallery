@@ -28,6 +28,20 @@ export interface ImageData {
   created_at: string;
   /** レコード最終更新日時（ISO 8601形式） */
   updated_at: string;
+
+  // Phase 3 追加フィールド
+  /** 動画の長さ（秒）- 動画のみ */
+  duration_seconds: number | null;
+  /** 動画の幅（ピクセル）- 動画のみ */
+  width: number | null;
+  /** 動画の高さ（ピクセル）- 動画のみ */
+  height: number | null;
+  /** ビデオコーデック - 動画のみ */
+  video_codec: string | null;
+  /** オーディオコーデック - 動画のみ */
+  audio_codec: string | null;
+  /** サムネイル画像のパス - 動画のみ */
+  thumbnail_path: string | null;
 }
 
 /**
