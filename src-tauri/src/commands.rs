@@ -133,3 +133,276 @@ pub struct ImageFileInfo {
     pub video_codec: Option<String>,
     pub audio_codec: Option<String>,
 }
+
+// ============================================================
+// Phase 4: グループ管理機能
+// ============================================================
+
+/**
+ * グループ情報を表す構造体
+ */
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GroupData {
+    pub id: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub color: String,
+    pub representative_image_id: Option<i64>,
+    pub created_at: String,
+    pub updated_at: String,
+    pub image_count: i64,
+}
+
+/**
+ * グループ作成時の入力データ
+ */
+#[derive(Debug, Deserialize)]
+pub struct CreateGroupInput {
+    pub name: String,
+    pub description: Option<String>,
+    pub color: Option<String>,
+    pub representative_image_id: Option<i64>,
+}
+
+/**
+ * グループ更新時の入力データ
+ */
+#[derive(Debug, Deserialize)]
+pub struct UpdateGroupInput {
+    pub id: i64,
+    pub name: Option<String>,
+    pub description: Option<String>,
+    pub color: Option<String>,
+    pub representative_image_id: Option<i64>,
+}
+
+/**
+ * グループを作成します
+ */
+#[tauri::command]
+pub fn create_group(input: CreateGroupInput) -> Result<i64, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let color = input.color.unwrap_or_else(|| "#3b82f6".to_string());
+
+    conn.execute(
+        "INSERT INTO groups (name, description, color, representative_image_id) VALUES (?, ?, ?, ?)",
+        rusqlite::params![
+            input.name,
+            input.description,
+            color,
+            input.representative_image_id,
+        ],
+    )
+    .map_err(|e| format!("Failed to create group: {}", e))?;
+
+    Ok(conn.last_insert_rowid())
+}
+
+/**
+ * 全グループを取得します（画像数を含む）
+ */
+#[tauri::command]
+pub fn get_all_groups() -> Result<Vec<GroupData>, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT
+            g.id,
+            g.name,
+            g.description,
+            g.color,
+            g.representative_image_id,
+            g.created_at,
+            g.updated_at,
+            COUNT(ig.image_id) as image_count
+        FROM groups g
+        LEFT JOIN image_groups ig ON g.id = ig.group_id
+        GROUP BY g.id
+        ORDER BY g.created_at DESC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let groups = stmt.query_map([], |row| {
+        Ok(GroupData {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            description: row.get(2)?,
+            color: row.get(3)?,
+            representative_image_id: row.get(4)?,
+            created_at: row.get(5)?,
+            updated_at: row.get(6)?,
+            image_count: row.get(7)?,
+        })
+    })
+    .map_err(|e| format!("Failed to query groups: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect groups: {}", e))?;
+
+    Ok(groups)
+}
+
+/**
+ * グループ情報を更新します
+ */
+#[tauri::command]
+pub fn update_group(input: UpdateGroupInput) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut updates = vec![];
+    let mut params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
+
+    if let Some(name) = input.name {
+        updates.push("name = ?");
+        params.push(Box::new(name));
+    }
+    if let Some(description) = input.description {
+        updates.push("description = ?");
+        params.push(Box::new(description));
+    }
+    if let Some(color) = input.color {
+        updates.push("color = ?");
+        params.push(Box::new(color));
+    }
+    if let Some(rep_id) = input.representative_image_id {
+        updates.push("representative_image_id = ?");
+        params.push(Box::new(rep_id));
+    }
+
+    if updates.is_empty() {
+        return Ok(());
+    }
+
+    updates.push("updated_at = CURRENT_TIMESTAMP");
+    params.push(Box::new(input.id));
+
+    let query = format!("UPDATE groups SET {} WHERE id = ?", updates.join(", "));
+    let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+    conn.execute(&query, params_refs.as_slice())
+        .map_err(|e| format!("Failed to update group: {}", e))?;
+
+    Ok(())
+}
+
+/**
+ * グループを削除します
+ */
+#[tauri::command]
+pub fn delete_group(group_id: i64) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    // CASCADE設定により、image_groups の関連レコードも自動削除される
+    conn.execute("DELETE FROM groups WHERE id = ?", rusqlite::params![group_id])
+        .map_err(|e| format!("Failed to delete group: {}", e))?;
+
+    Ok(())
+}
+
+/**
+ * 画像をグループに追加します
+ */
+#[tauri::command]
+pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    for image_id in image_ids {
+        // UNIQUE制約により重複挿入は無視される
+        let _ = conn.execute(
+            "INSERT OR IGNORE INTO image_groups (image_id, group_id) VALUES (?, ?)",
+            rusqlite::params![image_id, group_id],
+        );
+    }
+
+    Ok(())
+}
+
+/**
+ * 画像をグループから削除します
+ */
+#[tauri::command]
+pub fn remove_images_from_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    for image_id in image_ids {
+        conn.execute(
+            "DELETE FROM image_groups WHERE image_id = ? AND group_id = ?",
+            rusqlite::params![image_id, group_id],
+        )
+        .map_err(|e| format!("Failed to remove image from group: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/**
+ * グループに所属する画像IDの配列を取得します
+ */
+#[tauri::command]
+pub fn get_group_images(group_id: i64) -> Result<Vec<i64>, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn.prepare("SELECT image_id FROM image_groups WHERE group_id = ?")
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let image_ids = stmt.query_map(rusqlite::params![group_id], |row| {
+        row.get(0)
+    })
+    .map_err(|e| format!("Failed to query group images: {}", e))?
+    .collect::<Result<Vec<i64>, _>>()
+    .map_err(|e| format!("Failed to collect image IDs: {}", e))?;
+
+    Ok(image_ids)
+}
+
+/**
+ * 画像が所属するグループIDの配列を取得します
+ */
+#[tauri::command]
+pub fn get_image_groups(image_id: i64) -> Result<Vec<i64>, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn.prepare("SELECT group_id FROM image_groups WHERE image_id = ?")
+        .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let group_ids = stmt.query_map(rusqlite::params![image_id], |row| {
+        row.get(0)
+    })
+    .map_err(|e| format!("Failed to query image groups: {}", e))?
+    .collect::<Result<Vec<i64>, _>>()
+    .map_err(|e| format!("Failed to collect group IDs: {}", e))?;
+
+    Ok(group_ids)
+}
