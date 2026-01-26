@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { Play, AlertCircle, Heart } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
-import { updateImageMetadata } from '../utils/tauri-commands';
+import { updateImageMetadata, generateVideoThumbnail } from '../utils/tauri-commands';
 import type { ImageData } from '../types/image';
 
 interface MediaCardProps {
@@ -23,6 +23,8 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
   const [hasError, setHasError] = useState(false);
   const { toggleFavorite } = useImageStore();
   const isFavorite = media.is_favorite === 1;
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card onClick from firing
@@ -39,6 +41,27 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
     }
   };
 
+  // 動画の場合、サムネイル生成
+  useEffect(() => {
+    if (isVideo && !thumbnailUrl && !isGeneratingThumbnail) {
+      setIsGeneratingThumbnail(true);
+
+      generateVideoThumbnail(media.file_path, media.id)
+        .then((path) => {
+          const url = convertFileSrc(path, 'asset');
+          setThumbnailUrl(url);
+        })
+        .catch((err) => {
+          console.error('Failed to generate thumbnail:', err);
+          // フォールバック: videoタグ使用
+        })
+        .finally(() => {
+          setIsGeneratingThumbnail(false);
+        });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isVideo, media.id, media.file_path]);
+
   return (
     <div
       className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
@@ -49,22 +72,41 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-600">
           <AlertCircle className="w-12 h-12 text-gray-500 dark:text-gray-400 mb-2" />
           <p className="text-xs text-gray-600 dark:text-gray-300 text-center px-2">
-            {isVideo ? 'Video load error' : 'Image load error'}
+            {isVideo ? 'Unsupported video format' : 'Image load error'}
+          </p>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            {media.file_name.split('.').pop()?.toUpperCase()}
           </p>
         </div>
       ) : isVideo ? (
-        // 動画の場合: videoタグでサムネイル表示（最初のフレーム）
+        // 動画の場合: サムネイル画像または videoタグ
         <>
-          <video
-            src={`${mediaUrl}#t=0.1`}
-            className="w-full h-full object-cover pointer-events-none"
-            preload="metadata"
-            muted
-            onError={() => {
-              console.error('Failed to load video:', media.file_path);
-              setHasError(true);
-            }}
-          />
+          {thumbnailUrl ? (
+            // サムネイル画像表示
+            <img
+              src={thumbnailUrl}
+              alt={media.file_name}
+              className="w-full h-full object-cover pointer-events-none"
+              onError={() => setHasError(true)}
+            />
+          ) : isGeneratingThumbnail ? (
+            // 生成中のローディング表示
+            <div className="w-full h-full flex items-center justify-center bg-gray-300 dark:bg-gray-600">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+            </div>
+          ) : (
+            // フォールバック: videoタグ（既存実装）
+            <video
+              src={`${mediaUrl}#t=0.1`}
+              className="w-full h-full object-cover pointer-events-none"
+              preload="metadata"
+              muted
+              onError={() => {
+                console.error('Failed to load video:', media.file_path);
+                setHasError(true);
+              }}
+            />
+          )}
           {/* 再生アイコンオーバーレイ */}
           <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
             <div className="bg-white/90 rounded-full p-3">

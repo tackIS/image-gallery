@@ -550,6 +550,41 @@ export default function ImageDetail() {
                     {currentIndex + 1} / {images.length}
                   </p>
                 </div>
+
+                {/* 動画情報の表示 */}
+                {selectedImage.file_type === 'video' && (
+                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #374151' }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px', color: '#e5e7eb' }}>
+                      Video Information
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '14px', color: '#9ca3af' }}>
+                      {selectedImage.duration_seconds && (
+                        <p>
+                          <span style={{ fontWeight: '500', color: '#d1d5db' }}>Duration:</span>{' '}
+                          {formatDuration(selectedImage.duration_seconds)}
+                        </p>
+                      )}
+                      {selectedImage.width && selectedImage.height && (
+                        <p>
+                          <span style={{ fontWeight: '500', color: '#d1d5db' }}>Resolution:</span>{' '}
+                          {selectedImage.width}x{selectedImage.height}
+                        </p>
+                      )}
+                      {selectedImage.video_codec && (
+                        <p>
+                          <span style={{ fontWeight: '500', color: '#d1d5db' }}>Video Codec:</span>{' '}
+                          {selectedImage.video_codec.toUpperCase()}
+                        </p>
+                      )}
+                      {selectedImage.audio_codec && (
+                        <p>
+                          <span style={{ fontWeight: '500', color: '#d1d5db' }}>Audio Codec:</span>{' '}
+                          {selectedImage.audio_codec.toUpperCase()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             )}
@@ -559,4 +594,11 @@ export default function ImageDetail() {
     </div>,
     document.body
   );
+}
+
+// 秒数をmm:ss形式にフォーマット
+function formatDuration(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }

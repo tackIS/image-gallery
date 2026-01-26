@@ -5,7 +5,7 @@ use walkdir::WalkDir;
 const IMAGE_EXTENSIONS: &[&str] = &["jpg", "jpeg", "png", "gif", "webp"];
 
 /// 動画ファイルの拡張子リスト
-const VIDEO_EXTENSIONS: &[&str] = &["mp4"];
+const VIDEO_EXTENSIONS: &[&str] = &["mp4", "webm", "mov"];
 
 /// すべてのサポート対象拡張子を取得
 fn get_all_extensions() -> Vec<&'static str> {

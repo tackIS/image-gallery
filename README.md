@@ -5,7 +5,7 @@
 ## 主な機能
 
 - **メディアファイル管理**: ディレクトリをスキャンして画像・動画を一覧表示
-- **動画対応**: MP4動画の再生、サムネイル表示、カスタムプレイヤー
+- **動画対応**: MP4/WebM/MOV動画の再生、自動サムネイル生成、メタデータ抽出（長さ・解像度・コーデック情報）、カスタムプレイヤー
 - **メタデータ編集**: コメント、タグ、評価の追加・編集
 - **お気に入り機能**: 画像・動画をお気に入りに登録して一覧表示
 - **検索・フィルタリング**:
@@ -31,6 +31,8 @@
 
 ### 動画
 - MP4
+- WebM
+- MOV
 
 ## 技術スタック
 
@@ -48,6 +50,7 @@
 - SQLite (tauri-plugin-sql)
 - tauri-plugin-dialog (ディレクトリ選択)
 - tauri-plugin-fs (ファイルシステムアクセス)
+- ffmpeg/ffprobe (動画メタデータ抽出、サムネイル生成)
 
 ## 開発環境のセットアップ
 
@@ -55,6 +58,19 @@
 - Node.js 18以上
 - Rust（Tauriの依存）
 - macOS（開発ターゲット）
+- ffmpeg（動画メタデータ抽出とサムネイル生成に必要）
+
+#### ffmpegのインストール
+
+```bash
+# Homebrewでインストール
+brew install ffmpeg
+
+# インストール確認
+ffmpeg -version
+```
+
+**注意**: ffmpegがインストールされていない場合、動画は再生できますが、サムネイル生成とメタデータ抽出（長さ・解像度・コーデック情報）が利用できません。
 
 ### インストール
 
@@ -89,7 +105,8 @@ image-gallery/                     # リポジトリルート
 ├── doc/                           # ドキュメント（プロジェクト計画・要件定義）
 │   ├── 01_requirement             # 要件定義
 │   ├── 02_mp4-support-plan        # Phase 1 実装プラン
-│   └── 03_phase2-proposal         # Phase 2 開発提案
+│   ├── 03_phase2-proposal         # Phase 2 開発提案
+│   └── 04_phase3-video-enhancement # Phase 3 実装プラン（動画機能強化）
 ├── src/                           # React フロントエンドコード
 │   ├── components/                # UIコンポーネント
 │   │   ├── Header                 # ヘッダー（ディレクトリ選択、統計表示）
@@ -115,7 +132,8 @@ image-gallery/                     # リポジトリルート
 │   │   ├── main                   # エントリーポイント
 │   │   ├── commands               # Tauriコマンド定義
 │   │   ├── db                     # データベース管理
-│   │   └── fs_utils               # ファイルシステムユーティリティ
+│   │   ├── fs_utils               # ファイルシステムユーティリティ
+│   │   └── video_utils            # 動画処理（ffmpeg統合、メタデータ抽出、サムネイル生成）
 │   └── tauri.conf                 # Tauri設定
 ├── CLAUDE                         # Claude Code 開発ガイド
 ├── README                         # このファイル
@@ -174,7 +192,15 @@ CREATE TABLE images (
     rating INTEGER DEFAULT 0,         -- 0-5
     is_favorite INTEGER DEFAULT 0,    -- 0: 通常, 1: お気に入り
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    -- Phase 3: 動画メタデータ（v4で追加）
+    duration_seconds REAL,            -- 動画の長さ（秒）
+    width INTEGER,                    -- 解像度（幅）
+    height INTEGER,                   -- 解像度（高さ）
+    video_codec TEXT,                 -- ビデオコーデック
+    audio_codec TEXT,                 -- オーディオコーデック
+    thumbnail_path TEXT               -- サムネイル画像パス
 );
 ```
 
@@ -186,6 +212,7 @@ CREATE TABLE images (
 - Version 1: 初期テーブル作成
 - Version 2: `file_type`カラム追加（MP4動画対応）
 - Version 3: `is_favorite`カラム追加（お気に入り機能）
+- Version 4: 動画メタデータカラム追加（`duration_seconds`, `width`, `height`, `video_codec`, `audio_codec`, `thumbnail_path`）、WebM/MOV対応
 
 ### データベースのバックアップ
 
@@ -265,12 +292,21 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ### 動画のサムネイルが表示されない
 
-**症状**: MP4ファイルがグリッド表示で黒い画面や空白として表示される
+**症状**: 動画ファイルがグリッド表示で黒い画面や空白として表示される
 
 **解決方法**:
-- アプリケーションを最新バージョンにアップデートしてください
-- 動画ファイルが破損していないか確認してください
-- 動画形式がMP4であることを確認してください（他の形式は現在サポートされていません）
+1. ffmpegがインストールされているか確認：
+   ```bash
+   ffmpeg -version
+   ```
+   インストールされていない場合：
+   ```bash
+   brew install ffmpeg
+   ```
+2. アプリケーションを再起動してサムネイルの自動生成を待つ
+3. サムネイルが生成されない場合、設定から「Reset Database」を実行して再スキャン
+4. 動画ファイルが破損していないか確認
+5. サポートされているフォーマット（MP4/WebM/MOV）であることを確認
 
 ### アプリケーションが起動しない
 
@@ -354,9 +390,28 @@ gh pr create --title "タイトル" --body "説明" --base main
 3. コミットメッセージはConventional Commits形式に従ってください
 4. ダークモード対応とレスポンシブ対応を忘れずに実装してください
 
+## 実装済み機能（フェーズ別）
+
+### Phase 1: MP4動画対応
+- ✅ MP4動画の再生
+- ✅ カスタム動画プレイヤー（再生/一時停止、シーク、音量、フルスクリーン）
+
+### Phase 2: ユーザビリティ改善
+- ✅ お気に入り機能
+- ✅ 高度な検索・フィルター機能
+- ✅ スライドショー機能
+- ✅ 設定モーダル
+- ✅ データベースリセット機能
+
+### Phase 3: 動画機能強化
+- ✅ ffmpeg統合（バイナリ検出、バージョン確認）
+- ✅ WebM/MOV対応
+- ✅ 動画メタデータ抽出（長さ、解像度、コーデック情報）
+- ✅ サムネイル自動生成とキャッシング
+
 ## 今後の予定
 
-- 他の動画フォーマット対応（MOV, AVI, MKVなど）
-- 動画サムネイル生成機能
-- キーボードショートカット
+- 追加の動画フォーマット対応（AVI, MKVなど）
+- 高度なキーボードショートカット
 - 画像編集機能（回転、トリミング）
+- バッチサムネイル生成（バックグラウンド処理）

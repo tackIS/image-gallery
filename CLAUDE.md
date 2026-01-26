@@ -32,7 +32,8 @@ image-gallery/                     # リポジトリルート
 ├── doc/                          # 設計ドキュメント
 │   ├── 01_requirement.md          # 要件定義
 │   ├── 02_mp4-support-plan.md     # Phase 1 実装プラン
-│   └── 03_phase2-proposal.md      # Phase 2 提案
+│   ├── 03_phase2-proposal.md      # Phase 2 提案
+│   └── 04_phase3-video-enhancement.md # Phase 3 実装プラン（動画機能強化）
 ├── src/                          # Reactフロントエンド
 │   ├── components/               # UIコンポーネント
 │   │   ├── Header.tsx            # ヘッダー（ディレクトリ選択、統計）
@@ -61,7 +62,8 @@ image-gallery/                     # リポジトリルート
 │   │   ├── main.rs               # エントリーポイント
 │   │   ├── commands.rs           # Tauriコマンド定義
 │   │   ├── db.rs                 # データベース管理
-│   │   └── fs_utils.rs           # ファイルシステムユーティリティ
+│   │   ├── fs_utils.rs           # ファイルシステムユーティリティ
+│   │   └── video_utils.rs        # 動画処理（ffmpeg統合、メタデータ抽出、サムネイル生成）
 │   └── tauri.conf.json           # Tauri設定
 ├── public/                       # 静的アセット
 │   └── vite.svg
@@ -149,7 +151,15 @@ CREATE TABLE images (
     rating INTEGER DEFAULT 0,         -- 0-5
     is_favorite INTEGER DEFAULT 0,    -- 0: 通常, 1: お気に入り
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+
+    -- Phase 3: 動画メタデータ（Migration v4で追加）
+    duration_seconds REAL,            -- 動画の長さ（秒）
+    width INTEGER,                    -- 解像度（幅）
+    height INTEGER,                   -- 解像度（高さ）
+    video_codec TEXT,                 -- ビデオコーデック
+    audio_codec TEXT,                 -- オーディオコーデック
+    thumbnail_path TEXT               -- サムネイル画像パス
 );
 ```
 
@@ -360,6 +370,7 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 - [doc/01_requirement.md](./doc/01_requirement.md) - 要件定義
 - [doc/02_mp4-support-plan.md](./doc/02_mp4-support-plan.md) - Phase 1プラン
 - [doc/03_phase2-proposal.md](./doc/03_phase2-proposal.md) - Phase 2提案
+- [doc/04_phase3-video-enhancement.md](./doc/04_phase3-video-enhancement.md) - Phase 3プラン（動画機能強化）
 
 ## Claude Codeとの協働のコツ
 
@@ -394,6 +405,12 @@ gh issue create --title "機能: XXXを追加" --body "詳細な説明"
 
 ## 更新履歴
 
+- 2026-01-25: Phase 3実装完了
+  - ffmpeg統合（動画メタデータ抽出、サムネイル生成）
+  - WebM/MOV対応追加
+  - Migration v4追加（動画メタデータカラム）
+  - video_utils.rsモジュール追加
+  - プロジェクト構造とデータベーススキーマ更新
 - 2026-01-20: 初版作成
   - プロジェクト概要
   - Tailwind CSS v4の注意点

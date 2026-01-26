@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import type { SortBy } from '../store/imageStore';
 import type { FileType } from '../types/image';
-import { selectDirectory, scanDirectory } from '../utils/tauri-commands';
+import { selectDirectory, scanDirectory, checkFFmpegAvailable } from '../utils/tauri-commands';
 import SettingsModal from './SettingsModal';
 import { useTheme } from '../hooks/useTheme';
 
@@ -40,6 +40,13 @@ export default function Header() {
   // 画像と動画の件数を計算
   const imageCount = images.filter(m => m.file_type === 'image').length;
   const videoCount = images.filter(m => m.file_type === 'video').length;
+
+  // ffmpegの利用可能性をチェック
+  useEffect(() => {
+    checkFFmpegAvailable()
+      .then((msg) => console.log('[FFmpeg]', msg))
+      .catch((err) => console.warn('[FFmpeg] Not available:', err));
+  }, []);
 
   const handleSelectDirectory = async () => {
     try {
