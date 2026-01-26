@@ -41,6 +41,15 @@ pub fn run() {
       scan_directory,
       video_utils::check_ffmpeg_available,
       video_utils::generate_video_thumbnail,
+      // Phase 4: グループ管理コマンド
+      create_group,
+      get_all_groups,
+      update_group,
+      delete_group,
+      add_images_to_group,
+      remove_images_from_group,
+      get_group_images,
+      get_image_groups,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
