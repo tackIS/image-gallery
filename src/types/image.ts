@@ -70,3 +70,59 @@ export interface DirectoryInfo {
   /** ディレクトリ内の画像ファイル数 */
   imageCount: number;
 }
+
+// ============================================================
+// Phase 4: グループ管理機能
+// ============================================================
+
+/**
+ * グループ情報を表すインターフェース
+ */
+export interface GroupData {
+  /** グループID */
+  id: number;
+  /** グループ名 */
+  name: string;
+  /** 説明文（任意） */
+  description: string | null;
+  /** 色ラベル（HEXカラーコード） */
+  color: string;
+  /** 代表画像ID（任意） */
+  representative_image_id: number | null;
+  /** 作成日時（ISO 8601形式） */
+  created_at: string;
+  /** 最終更新日時（ISO 8601形式） */
+  updated_at: string;
+  /** グループ内の画像数 */
+  image_count: number;
+}
+
+/**
+ * グループ作成入力
+ */
+export interface CreateGroupInput {
+  /** グループ名（必須） */
+  name: string;
+  /** 説明文（任意） */
+  description?: string;
+  /** 色ラベル（任意、デフォルト: #3b82f6） */
+  color?: string;
+  /** 代表画像ID（任意） */
+  representative_image_id?: number;
+}
+
+/**
+ * グループ更新入力
+ */
+export interface UpdateGroupInput {
+  /** グループID */
+  id: number;
+  /** グループ名（任意） */
+  name?: string;
+  /** 説明文（任意） */
+  description?: string;
+  /** 色ラベル（任意） */
+  color?: string;
+  /** 代表画像ID（任意） */
+  representative_image_id?: number;
+}
