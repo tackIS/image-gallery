@@ -3,6 +3,10 @@ use std::process::Command;
 use std::fs;
 use serde::{Deserialize, Serialize};
 
+// サムネイル生成の定数
+const THUMBNAIL_TIMESTAMP_SECONDS: f64 = 3.0; // 冒頭は黒画面が多いため3秒目から抽出
+const THUMBNAIL_JPEG_QUALITY: &str = "2"; // 1-31, 低いほど高品質
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct VideoMetadata {
     pub duration_seconds: f64,
@@ -59,12 +63,22 @@ pub fn check_ffmpeg_available() -> Result<String, String> {
 
 /// ffprobeで動画メタデータを取得
 pub fn extract_video_metadata(video_path: &str) -> Result<VideoMetadata, String> {
+    // ファイルパスの検証（セキュリティ対策）
+    let video_file = PathBuf::from(video_path);
+    if !video_file.exists() {
+        return Err(format!("Video file not found: {}", video_path));
+    }
+    if !video_file.is_file() {
+        return Err(format!("Path is not a file: {}", video_path));
+    }
+
     let ffmpeg_path = find_ffmpeg()
         .ok_or("FFmpeg not found")?;
 
+    // unwrap()を使わずエラーハンドリング
     let ffprobe_path = ffmpeg_path
         .parent()
-        .unwrap()
+        .ok_or("Invalid ffmpeg path: cannot get parent directory")?
         .join("ffprobe");
 
     if !ffprobe_path.exists() {
@@ -84,7 +98,8 @@ pub fn extract_video_metadata(video_path: &str) -> Result<VideoMetadata, String>
         .map_err(|e| format!("Failed to execute ffprobe: {}", e))?;
 
     if !output.status.success() {
-        return Err("ffprobe execution failed".to_string());
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(format!("Failed to extract video metadata. Error: {}", stderr));
     }
 
     // JSONパース
@@ -140,6 +155,15 @@ pub fn generate_thumbnail(
     image_id: i64,
     timestamp_seconds: f64,
 ) -> Result<String, String> {
+    // ファイルパスの検証（セキュリティ対策）
+    let video_file = PathBuf::from(video_path);
+    if !video_file.exists() {
+        return Err(format!("Video file not found: {}", video_path));
+    }
+    if !video_file.is_file() {
+        return Err(format!("Path is not a file: {}", video_path));
+    }
+
     let ffmpeg_path = find_ffmpeg()
         .ok_or("FFmpeg not found")?;
 
@@ -151,15 +175,20 @@ pub fn generate_thumbnail(
         return Ok(thumbnail_path.to_string_lossy().to_string());
     }
 
+    // unwrap()を使わずエラーハンドリング
+    let thumbnail_path_str = thumbnail_path
+        .to_str()
+        .ok_or("Invalid thumbnail path: contains invalid UTF-8")?;
+
     // ffmpegコマンド実行
     let output = Command::new(ffmpeg_path)
         .args(&[
-            "-ss", &timestamp_seconds.to_string(),  // 指定秒数にシーク
-            "-i", video_path,                       // 入力ファイル
-            "-vframes", "1",                        // 1フレームのみ
-            "-vf", "scale=400:400:force_original_aspect_ratio=decrease", // リサイズ
-            "-q:v", "2",                            // JPEG品質（1-31, 低いほど高品質）
-            thumbnail_path.to_str().unwrap(),
+            "-ss", &timestamp_seconds.to_string(),
+            "-i", video_path,
+            "-vframes", "1",
+            "-vf", "scale=400:400:force_original_aspect_ratio=decrease",
+            "-q:v", THUMBNAIL_JPEG_QUALITY,
+            thumbnail_path_str,
         ])
         .output()
         .map_err(|e| format!("Failed to execute ffmpeg: {}", e))?;
@@ -177,6 +206,5 @@ pub async fn generate_video_thumbnail(
     video_path: String,
     image_id: i64,
 ) -> Result<String, String> {
-    // 動画の3秒目からサムネイル生成（冒頭は黒画面が多いため）
-    generate_thumbnail(&video_path, image_id, 3.0)
+    generate_thumbnail(&video_path, image_id, THUMBNAIL_TIMESTAMP_SECONDS)
 }

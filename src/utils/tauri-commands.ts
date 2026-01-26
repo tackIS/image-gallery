@@ -104,11 +104,11 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
             fileInfo.file_path,
             fileInfo.file_name,
             fileInfo.file_type,
-            fileInfo.duration_seconds || null,
-            fileInfo.width || null,
-            fileInfo.height || null,
-            fileInfo.video_codec || null,
-            fileInfo.audio_codec || null,
+            fileInfo.duration_seconds ?? null,
+            fileInfo.width ?? null,
+            fileInfo.height ?? null,
+            fileInfo.video_codec ?? null,
+            fileInfo.audio_codec ?? null,
           ]
         );
       }
