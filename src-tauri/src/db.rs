@@ -95,6 +95,39 @@ pub fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_resolution ON images(width, height);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 5,
+            description: "add_groups_and_image_groups_tables",
+            sql: "
+                -- グループテーブル
+                CREATE TABLE IF NOT EXISTS groups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    description TEXT,
+                    color TEXT DEFAULT '#3b82f6',
+                    representative_image_id INTEGER,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (representative_image_id) REFERENCES images(id) ON DELETE SET NULL
+                );
+                CREATE INDEX IF NOT EXISTS idx_groups_name ON groups(name);
+                CREATE INDEX IF NOT EXISTS idx_groups_created_at ON groups(created_at);
+
+                -- 中間テーブル（画像とグループの多対多関係）
+                CREATE TABLE IF NOT EXISTS image_groups (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    image_id INTEGER NOT NULL,
+                    group_id INTEGER NOT NULL,
+                    added_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (image_id) REFERENCES images(id) ON DELETE CASCADE,
+                    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+                    UNIQUE(image_id, group_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_image_groups_image ON image_groups(image_id);
+                CREATE INDEX IF NOT EXISTS idx_image_groups_group ON image_groups(group_id);
+            ",
+            kind: MigrationKind::Up,
         }
     ]
 }
