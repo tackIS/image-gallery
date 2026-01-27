@@ -6,6 +6,7 @@ import {
   getAllGroups,
   updateGroup,
   deleteGroup,
+  getGroupImages,
 } from '../utils/tauri-commands';
 import GroupItem from './GroupItem';
 import GroupModal from './GroupModal';
@@ -29,6 +30,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     removeGroup,
     selectedGroupId,
     setSelectedGroupId,
+    setGroupFilteredImageIds,
   } = useImageStore();
 
   const [showModal, setShowModal] = useState(false);
@@ -88,6 +90,23 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     setEditingGroup(null);
   };
 
+  const handleSelectAllImages = () => {
+    setSelectedGroupId(null);
+    setGroupFilteredImageIds([]);
+  };
+
+  const handleSelectGroup = async (groupId: number) => {
+    try {
+      setSelectedGroupId(groupId);
+      const imageIds = await getGroupImages(groupId);
+      setGroupFilteredImageIds(imageIds);
+    } catch (err) {
+      console.error('Failed to get group images:', err);
+      setSelectedGroupId(null);
+      setGroupFilteredImageIds([]);
+    }
+  };
+
   if (!isOpen) {
     return null;
   }
@@ -111,7 +130,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
           {/* All Images ボタン */}
           <button
-            onClick={() => setSelectedGroupId(null)}
+            onClick={handleSelectAllImages}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
               selectedGroupId === null
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
@@ -137,7 +156,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                   key={group.id}
                   group={group}
                   isSelected={selectedGroupId === group.id}
-                  onClick={() => setSelectedGroupId(group.id)}
+                  onClick={() => handleSelectGroup(group.id)}
                   onEdit={() => handleEditGroup(group)}
                   onDelete={() => handleDeleteGroup(group.id)}
                 />

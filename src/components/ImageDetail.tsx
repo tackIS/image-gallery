@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageStore } from '../store/imageStore';
-import { updateImageMetadata, getAllImages } from '../utils/tauri-commands';
-import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle, Presentation } from 'lucide-react';
+import { updateImageMetadata, getAllImages, getImageGroups } from '../utils/tauri-commands';
+import { X, ChevronLeft, ChevronRight, Edit2, Save, XCircle, Presentation, Folder } from 'lucide-react';
 import VideoPlayer from './VideoPlayer';
 import SlideshowControls from './SlideshowControls';
 
@@ -26,6 +26,7 @@ export default function ImageDetail() {
     slideshowInterval,
     startSlideshow,
     stopSlideshow,
+    groups,
   } = useImageStore();
 
   // 編集モード状態
@@ -34,6 +35,9 @@ export default function ImageDetail() {
   const [editComment, setEditComment] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+
+  // 所属グループ
+  const [belongingGroupIds, setBelongingGroupIds] = useState<number[]>([]);
 
   // 選択された画像を取得
   const selectedImage = images.find((img) => img.id === selectedImageId);
@@ -46,6 +50,14 @@ export default function ImageDetail() {
       setEditComment(selectedImage.comment || '');
       setEditTags(selectedImage.tags || []);
       setIsEditing(false);
+
+      // 所属グループを取得
+      getImageGroups(selectedImage.id)
+        .then((groupIds) => setBelongingGroupIds(groupIds))
+        .catch((err) => {
+          console.error('Failed to get image groups:', err);
+          setBelongingGroupIds([]);
+        });
     }
   }, [selectedImage]);
 
@@ -516,6 +528,47 @@ export default function ImageDetail() {
                     <p style={{ fontSize: '14px' }}>
                       {selectedImage.comment || <span style={{ color: '#6b7280' }}>No comment</span>}
                     </p>
+                  )}
+                </div>
+
+                {/* 所属グループ */}
+                <div>
+                  <h3 style={{ fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Groups</h3>
+                  {belongingGroupIds.length === 0 ? (
+                    <p style={{ fontSize: '14px', color: '#6b7280' }}>Not in any group</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {belongingGroupIds.map((groupId) => {
+                        const group = groups.find((g) => g.id === groupId);
+                        if (!group) return null;
+                        return (
+                          <div
+                            key={groupId}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '4px 10px',
+                              backgroundColor: '#374151',
+                              borderRadius: '6px',
+                              fontSize: '14px',
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: '12px',
+                                height: '12px',
+                                borderRadius: '50%',
+                                backgroundColor: group.color,
+                                flexShrink: 0,
+                              }}
+                            />
+                            <Folder size={14} style={{ flexShrink: 0 }} />
+                            <span>{group.name}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
 
