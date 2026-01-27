@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon } from 'lucide-react';
+import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon, Menu } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import type { SortBy } from '../store/imageStore';
 import type { FileType } from '../types/image';
@@ -7,11 +7,18 @@ import { selectDirectory, scanDirectory, checkFFmpegAvailable } from '../utils/t
 import SettingsModal from './SettingsModal';
 import { useTheme } from '../hooks/useTheme';
 
+interface HeaderProps {
+  /** サイドバーが開いているかどうか */
+  isSidebarOpen: boolean;
+  /** サイドバーの開閉を切り替えるコールバック */
+  onToggleSidebar: () => void;
+}
+
 /**
  * アプリケーションヘッダーコンポーネント
  * ディレクトリ選択ボタンと統計情報を表示します
  */
-export default function Header() {
+export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) {
   const {
     images,
     setImages,
@@ -96,17 +103,29 @@ export default function Header() {
   return (
     <>
       <header className="bg-white dark:bg-gray-800 shadow-sm p-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Gallery</h1>
-          {images.length > 0 && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {hasActiveFilters && `${filteredImages.length} / `}
-              {imageCount} {imageCount === 1 ? 'image' : 'images'}
-              {videoCount > 0 && (
-                <>, {videoCount} {videoCount === 1 ? 'video' : 'videos'}</>
-              )}
-            </p>
-          )}
+        <div className="flex items-center gap-3">
+          {/* サイドバートグルボタン */}
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors text-gray-700 dark:text-gray-300"
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            title={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+          >
+            <Menu size={20} />
+          </button>
+
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Gallery</h1>
+            {images.length > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {hasActiveFilters && `${filteredImages.length} / `}
+                {imageCount} {imageCount === 1 ? 'image' : 'images'}
+                {videoCount > 0 && (
+                  <>, {videoCount} {videoCount === 1 ? 'video' : 'videos'}</>
+                )}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* 検索バー */}
