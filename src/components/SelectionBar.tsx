@@ -16,6 +16,8 @@ export default function SelectionBar() {
     toggleSelectionMode,
     groups,
     selectedGroupId,
+    setGroups,
+    showToast,
   } = useImageStore();
 
   const [showAddToGroupMenu, setShowAddToGroupMenu] = useState(false);
@@ -40,8 +42,6 @@ export default function SelectionBar() {
 
   const handleAddToGroup = async (groupId: number) => {
     try {
-      const { setGroups } = useImageStore.getState();
-
       await addImagesToGroup(selectedImageIds, groupId);
 
       // グループリストを更新（画像数を反映）
@@ -49,10 +49,13 @@ export default function SelectionBar() {
       setGroups(updatedGroups);
 
       setShowAddToGroupMenu(false);
-      alert(`${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} added to group`);
+      showToast(
+        `${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} added to group`,
+        'success'
+      );
     } catch (err) {
       console.error('Failed to add images to group:', err);
-      alert('Failed to add images to group');
+      showToast('Failed to add images to group', 'error');
     }
   };
 
@@ -60,18 +63,19 @@ export default function SelectionBar() {
     if (!selectedGroupId) return;
 
     try {
-      const { setGroups } = useImageStore.getState();
-
       await removeImagesFromGroup(selectedImageIds, selectedGroupId);
 
       // グループリストを更新（画像数を反映）
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
 
-      alert(`${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} removed from group`);
+      showToast(
+        `${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} removed from group`,
+        'success'
+      );
     } catch (err) {
       console.error('Failed to remove images from group:', err);
-      alert('Failed to remove images from group');
+      showToast('Failed to remove images from group', 'error');
     }
   };
 
@@ -109,7 +113,11 @@ export default function SelectionBar() {
       <div className="relative" ref={addMenuRef}>
         <button
           onClick={() => setShowAddToGroupMenu(!showAddToGroupMenu)}
-          className="flex items-center gap-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded transition-colors ${
+            groups.length === 0
+              ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+              : 'bg-blue-500 text-white hover:bg-blue-600'
+          }`}
           disabled={groups.length === 0}
         >
           <FolderPlus size={16} />

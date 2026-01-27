@@ -8,6 +8,7 @@ import ImageDetail from './components/ImageDetail';
 import LoadingSpinner from './components/LoadingSpinner';
 import EmptyState from './components/EmptyState';
 import SelectionBar from './components/SelectionBar';
+import Toast from './components/Toast';
 
 function App() {
   const {
@@ -55,6 +56,17 @@ function App() {
   // キーボードショートカット
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // 入力フィールド内では動作しない
+      const target = e.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        // Escapeだけは入力フィールド内でも動作させる
+        if (e.key === 'Escape' && isSelectionMode) {
+          clearSelection();
+          toggleSelectionMode();
+        }
+        return;
+      }
+
       // Ctrl/Cmd + A: 全選択
       if ((e.ctrlKey || e.metaKey) && e.key === 'a' && isSelectionMode) {
         e.preventDefault();
@@ -118,6 +130,9 @@ function App() {
 
       {/* 選択バー（選択モード時） */}
       {isSelectionMode && <SelectionBar />}
+
+      {/* トースト通知 */}
+      <Toast />
 
       {/* 画像詳細モーダル */}
       <ImageDetail />
