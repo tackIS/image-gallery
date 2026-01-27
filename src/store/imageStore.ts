@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { ImageData, FileType } from '../types/image';
+import type { ImageData, FileType, GroupData } from '../types/image';
 
 /**
  * ソート基準の型
@@ -65,6 +65,16 @@ interface ImageStore {
   /** スライドショーの再生間隔（秒） */
   slideshowInterval: SlideshowInterval;
 
+  // Phase 4: グループ管理
+  /** 読み込まれたグループの配列 */
+  groups: GroupData[];
+  /** 複数選択モードかどうか */
+  isSelectionMode: boolean;
+  /** 選択された画像IDの配列（複数選択用） */
+  selectedImageIds: number[];
+  /** 選択されたグループID（フィルター用、nullは全て表示） */
+  selectedGroupId: number | null;
+
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
   /** 現在のディレクトリパスを設定します */
@@ -109,6 +119,26 @@ interface ImageStore {
   toggleSlideshow: () => void;
   /** スライドショーの再生間隔を設定します */
   setSlideshowInterval: (interval: SlideshowInterval) => void;
+
+  // Phase 4: グループ関連アクション
+  /** グループの配列を設定します */
+  setGroups: (groups: GroupData[]) => void;
+  /** グループを追加します */
+  addGroup: (group: GroupData) => void;
+  /** グループを更新します */
+  updateGroup: (id: number, data: Partial<GroupData>) => void;
+  /** グループを削除します */
+  removeGroup: (id: number) => void;
+  /** 選択モードを切り替えます */
+  toggleSelectionMode: () => void;
+  /** 画像の選択状態を切り替えます */
+  toggleImageSelection: (id: number) => void;
+  /** すべての画像を選択/解除します */
+  toggleSelectAll: () => void;
+  /** 選択をクリアします */
+  clearSelection: () => void;
+  /** 選択されたグループIDを設定します */
+  setSelectedGroupId: (id: number | null) => void;
 }
 
 /**
@@ -136,6 +166,12 @@ export const useImageStore = create<ImageStore>()(
       searchQuery: '',
       isSlideshowActive: false,
       slideshowInterval: 5,
+
+      // Phase 4: グループ管理
+      groups: [],
+      isSelectionMode: false,
+      selectedImageIds: [],
+      selectedGroupId: null,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -265,6 +301,51 @@ export const useImageStore = create<ImageStore>()(
       stopSlideshow: () => set({ isSlideshowActive: false }),
       toggleSlideshow: () => set((state) => ({ isSlideshowActive: !state.isSlideshowActive })),
       setSlideshowInterval: (interval) => set({ slideshowInterval: interval }),
+
+      // Phase 4: グループ関連アクション
+      setGroups: (groups) => set({ groups }),
+      addGroup: (group) =>
+        set((state) => ({
+          groups: [group, ...state.groups],
+        })),
+      updateGroup: (id, data) =>
+        set((state) => ({
+          groups: state.groups.map((g) =>
+            g.id === id ? { ...g, ...data } : g
+          ),
+        })),
+      removeGroup: (id) =>
+        set((state) => ({
+          groups: state.groups.filter((g) => g.id !== id),
+          // 削除したグループが選択されていたらクリア
+          selectedGroupId: state.selectedGroupId === id ? null : state.selectedGroupId,
+        })),
+      toggleSelectionMode: () =>
+        set((state) => ({
+          isSelectionMode: !state.isSelectionMode,
+          // 選択モード終了時は選択をクリア
+          selectedImageIds: state.isSelectionMode ? [] : state.selectedImageIds,
+        })),
+      toggleImageSelection: (id) =>
+        set((state) => ({
+          selectedImageIds: state.selectedImageIds.includes(id)
+            ? state.selectedImageIds.filter((imgId) => imgId !== id)
+            : [...state.selectedImageIds, id],
+        })),
+      toggleSelectAll: () =>
+        set((state) => {
+          const filteredImages = state.getSortedAndFilteredImages();
+          const allSelected =
+            filteredImages.length > 0 &&
+            filteredImages.every((img) => state.selectedImageIds.includes(img.id));
+          return {
+            selectedImageIds: allSelected
+              ? []
+              : filteredImages.map((img) => img.id),
+          };
+        }),
+      clearSelection: () => set({ selectedImageIds: [] }),
+      setSelectedGroupId: (id) => set({ selectedGroupId: id }),
     }),
     {
       name: 'image-gallery-settings',
@@ -273,6 +354,7 @@ export const useImageStore = create<ImageStore>()(
         sortOrder: state.sortOrder,
         filterSettings: state.filterSettings,
         slideshowInterval: state.slideshowInterval,
+        selectedGroupId: state.selectedGroupId, // グループフィルターを永続化
       }),
     }
   )

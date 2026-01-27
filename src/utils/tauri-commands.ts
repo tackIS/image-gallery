@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import Database from '@tauri-apps/plugin-sql';
-import type { ImageData, ImageMetadataUpdate } from '../types/image';
+import type { ImageData, ImageMetadataUpdate, GroupData, CreateGroupInput, UpdateGroupInput } from '../types/image';
 
 /**
  * ファイルシステムからスキャンされたメディアファイル情報
@@ -254,4 +254,85 @@ export async function generateVideoThumbnail(
     videoPath,
     imageId,
   });
+}
+
+// ============================================================
+// Phase 4: グループ管理API
+// ============================================================
+
+/**
+ * グループを作成します
+ * @param input グループ作成入力データ
+ * @returns 作成されたグループのID
+ * @throws グループ作成に失敗した場合
+ */
+export async function createGroup(input: CreateGroupInput): Promise<number> {
+  return await invoke<number>('create_group', { input });
+}
+
+/**
+ * すべてのグループを取得します
+ * @returns グループデータの配列（画像数を含む）
+ * @throws グループ取得に失敗した場合
+ */
+export async function getAllGroups(): Promise<GroupData[]> {
+  return await invoke<GroupData[]>('get_all_groups');
+}
+
+/**
+ * グループを更新します
+ * @param input グループ更新入力データ
+ * @throws グループ更新に失敗した場合
+ */
+export async function updateGroup(input: UpdateGroupInput): Promise<void> {
+  return await invoke<void>('update_group', { input });
+}
+
+/**
+ * グループを削除します
+ * @param groupId グループID
+ * @throws グループ削除に失敗した場合
+ */
+export async function deleteGroup(groupId: number): Promise<void> {
+  return await invoke<void>('delete_group', { groupId });
+}
+
+/**
+ * 画像をグループに追加します
+ * @param imageIds 画像IDの配列
+ * @param groupId グループID
+ * @throws 画像追加に失敗した場合
+ */
+export async function addImagesToGroup(imageIds: number[], groupId: number): Promise<void> {
+  return await invoke<void>('add_images_to_group', { imageIds, groupId });
+}
+
+/**
+ * 画像をグループから削除します
+ * @param imageIds 画像IDの配列
+ * @param groupId グループID
+ * @throws 画像削除に失敗した場合
+ */
+export async function removeImagesFromGroup(imageIds: number[], groupId: number): Promise<void> {
+  return await invoke<void>('remove_images_from_group', { imageIds, groupId });
+}
+
+/**
+ * グループに所属する画像IDの配列を取得します
+ * @param groupId グループID
+ * @returns 画像IDの配列
+ * @throws 画像ID取得に失敗した場合
+ */
+export async function getGroupImages(groupId: number): Promise<number[]> {
+  return await invoke<number[]>('get_group_images', { groupId });
+}
+
+/**
+ * 画像が所属するグループIDの配列を取得します
+ * @param imageId 画像ID
+ * @returns グループIDの配列
+ * @throws グループID取得に失敗した場合
+ */
+export async function getImageGroups(imageId: number): Promise<number[]> {
+  return await invoke<number[]>('get_image_groups', { imageId });
 }
