@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import { Play, AlertCircle, Heart } from 'lucide-react';
+import { Play, AlertCircle, Heart, Check } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import { updateImageMetadata, generateVideoThumbnail } from '../utils/tauri-commands';
 import type { ImageData } from '../types/image';
@@ -21,10 +21,21 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
-  const { toggleFavorite } = useImageStore();
+  const { toggleFavorite, isSelectionMode, selectedImageIds, toggleImageSelection } = useImageStore();
   const isFavorite = media.is_favorite === 1;
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
+  const isSelected = selectedImageIds.includes(media.id);
+
+  const handleCardClick = () => {
+    if (isSelectionMode) {
+      // 選択モード時: 選択/解除をトグル
+      toggleImageSelection(media.id);
+    } else {
+      // 通常時: 詳細モーダルを開く
+      onClick();
+    }
+  };
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card onClick from firing
@@ -64,8 +75,10 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
 
   return (
     <div
-      className="relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-shadow cursor-pointer"
-      onClick={onClick}
+      className={`relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 hover:shadow-lg transition-all cursor-pointer ${
+        isSelected ? 'ring-4 ring-blue-500' : ''
+      }`}
+      onClick={handleCardClick}
     >
       {hasError ? (
         // エラー時のプレースホルダー
@@ -126,6 +139,19 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
             setHasError(true);
           }}
         />
+      )}
+
+      {/* 選択チェックボックス（選択モード時） */}
+      {isSelectionMode && (
+        <div
+          className={`absolute top-2 left-2 w-6 h-6 rounded border-2 flex items-center justify-center z-10 transition-colors ${
+            isSelected
+              ? 'bg-blue-500 border-blue-500'
+              : 'bg-white/90 dark:bg-gray-800/90 border-gray-300 dark:border-gray-600'
+          }`}
+        >
+          {isSelected && <Check size={16} className="text-white" />}
+        </div>
       )}
 
       {/* お気に入りボタン */}

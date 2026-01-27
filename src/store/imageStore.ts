@@ -39,6 +39,20 @@ export interface FilterSettings {
 export type SlideshowInterval = 3 | 5 | 10;
 
 /**
+ * トースト通知の型
+ */
+export type ToastType = 'success' | 'error' | 'info';
+
+/**
+ * トースト通知の情報
+ */
+export interface Toast {
+  id: string;
+  message: string;
+  type: ToastType;
+}
+
+/**
  * 画像ギャラリーのグローバル状態を管理するストアのインターフェース
  */
 interface ImageStore {
@@ -74,6 +88,8 @@ interface ImageStore {
   selectedImageIds: number[];
   /** 選択されたグループID（フィルター用、nullは全て表示） */
   selectedGroupId: number | null;
+  /** トースト通知の配列 */
+  toasts: Toast[];
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -139,6 +155,10 @@ interface ImageStore {
   clearSelection: () => void;
   /** 選択されたグループIDを設定します */
   setSelectedGroupId: (id: number | null) => void;
+  /** トースト通知を表示します */
+  showToast: (message: string, type: ToastType) => void;
+  /** トースト通知を削除します */
+  removeToast: (id: string) => void;
 }
 
 /**
@@ -172,6 +192,7 @@ export const useImageStore = create<ImageStore>()(
       isSelectionMode: false,
       selectedImageIds: [],
       selectedGroupId: null,
+      toasts: [],
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -346,6 +367,22 @@ export const useImageStore = create<ImageStore>()(
         }),
       clearSelection: () => set({ selectedImageIds: [] }),
       setSelectedGroupId: (id) => set({ selectedGroupId: id }),
+      showToast: (message, type) => {
+        const id = `toast-${Date.now()}-${Math.random()}`;
+        set((state) => ({
+          toasts: [...state.toasts, { id, message, type }],
+        }));
+        // 3秒後に自動削除
+        setTimeout(() => {
+          set((state) => ({
+            toasts: state.toasts.filter((t) => t.id !== id),
+          }));
+        }, 3000);
+      },
+      removeToast: (id) =>
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        })),
     }),
     {
       name: 'image-gallery-settings',
