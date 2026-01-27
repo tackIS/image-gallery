@@ -7,9 +7,22 @@ import ImageGrid from './components/ImageGrid';
 import ImageDetail from './components/ImageDetail';
 import LoadingSpinner from './components/LoadingSpinner';
 import EmptyState from './components/EmptyState';
+import SelectionBar from './components/SelectionBar';
 
 function App() {
-  const { images, currentDirectory, error, isLoading, setError, setLoading, setGroups } = useImageStore();
+  const {
+    images,
+    currentDirectory,
+    error,
+    isLoading,
+    setError,
+    setLoading,
+    setGroups,
+    isSelectionMode,
+    toggleSelectAll,
+    clearSelection,
+    toggleSelectionMode,
+  } = useImageStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -38,6 +51,32 @@ function App() {
     };
     init();
   }, [setError, setLoading, setGroups]);
+
+  // キーボードショートカット
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + A: 全選択
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && isSelectionMode) {
+        e.preventDefault();
+        toggleSelectAll();
+      }
+
+      // Ctrl/Cmd + D: 選択解除
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && isSelectionMode) {
+        e.preventDefault();
+        clearSelection();
+      }
+
+      // Escape: 選択モード終了
+      if (e.key === 'Escape' && isSelectionMode) {
+        clearSelection();
+        toggleSelectionMode();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSelectionMode, toggleSelectAll, clearSelection, toggleSelectionMode]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col">
@@ -76,6 +115,9 @@ function App() {
           {!isLoading && currentDirectory && images.length > 0 && <ImageGrid />}
         </main>
       </div>
+
+      {/* 選択バー（選択モード時） */}
+      {isSelectionMode && <SelectionBar />}
 
       {/* 画像詳細モーダル */}
       <ImageDetail />

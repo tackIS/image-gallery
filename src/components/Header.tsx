@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon, Menu } from 'lucide-react';
+import { FolderOpen, Settings, ArrowUpDown, Filter, X, Search, Sun, Moon, Menu, CheckSquare } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import type { SortBy } from '../store/imageStore';
 import type { FileType } from '../types/image';
@@ -36,6 +36,9 @@ export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) 
     getSortedAndFilteredImages,
     searchQuery,
     setSearchQuery,
+    isSelectionMode,
+    toggleSelectionMode,
+    selectedImageIds,
   } = useImageStore();
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -115,7 +118,28 @@ export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) 
           </button>
 
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Gallery</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Image Gallery</h1>
+
+              {/* 選択モードトグルボタン */}
+              {images.length > 0 && (
+                <button
+                  onClick={toggleSelectionMode}
+                  className={`flex items-center gap-1.5 px-2 py-1 text-sm rounded transition-colors ${
+                    isSelectionMode
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                  aria-label={isSelectionMode ? 'Exit selection mode' : 'Enter selection mode'}
+                  title={isSelectionMode ? 'Exit selection mode' : 'Enter selection mode'}
+                >
+                  <CheckSquare size={16} />
+                  {isSelectionMode && selectedImageIds.length > 0 && (
+                    <span>{selectedImageIds.length}</span>
+                  )}
+                </button>
+              )}
+            </div>
             {images.length > 0 && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                 {hasActiveFilters && `${filteredImages.length} / `}
