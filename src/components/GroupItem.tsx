@@ -27,7 +27,9 @@ export default function GroupItem({
   onDelete,
 }: GroupItemProps) {
   const [showMenu, setShowMenu] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -45,6 +47,18 @@ export default function GroupItem({
 
   const handleMenuClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // メニューを開く前に位置を計算
+    if (!showMenu && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const spaceBelow = windowHeight - rect.bottom;
+      const menuHeight = 100; // メニューの概算高さ（2項目）
+
+      // 下部に十分なスペースがない場合は上方向に開く
+      setMenuPosition(spaceBelow < menuHeight ? 'top' : 'bottom');
+    }
+
     setShowMenu(!showMenu);
   };
 
@@ -96,6 +110,7 @@ export default function GroupItem({
       {/* メニューボタン（ホバー時に表示） */}
       <div className="relative" ref={menuRef}>
         <button
+          ref={buttonRef}
           onClick={handleMenuClick}
           className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${
             showMenu ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
@@ -107,7 +122,11 @@ export default function GroupItem({
 
         {/* ドロップダウンメニュー */}
         {showMenu && (
-          <div className="absolute right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg py-1 z-10 min-w-[120px]">
+          <div
+            className={`absolute right-0 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg py-1 z-10 min-w-[120px] ${
+              menuPosition === 'bottom' ? 'top-full mt-1' : 'bottom-full mb-1'
+            }`}
+          >
             <button
               onClick={handleEdit}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
