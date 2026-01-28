@@ -88,6 +88,8 @@ interface ImageStore {
   selectedImageIds: number[];
   /** 選択されたグループID（フィルター用、nullは全て表示） */
   selectedGroupId: number | null;
+  /** グループフィルター用の画像IDリスト（selectedGroupIdがnullでない場合のみ使用） */
+  groupFilteredImageIds: number[];
   /** トースト通知の配列 */
   toasts: Toast[];
 
@@ -155,6 +157,8 @@ interface ImageStore {
   clearSelection: () => void;
   /** 選択されたグループIDを設定します */
   setSelectedGroupId: (id: number | null) => void;
+  /** グループフィルター用の画像IDリストを設定します */
+  setGroupFilteredImageIds: (ids: number[]) => void;
   /** トースト通知を表示します */
   showToast: (message: string, type: ToastType) => void;
   /** トースト通知を削除します */
@@ -192,6 +196,7 @@ export const useImageStore = create<ImageStore>()(
       isSelectionMode: false,
       selectedImageIds: [],
       selectedGroupId: null,
+      groupFilteredImageIds: [],
       toasts: [],
 
       setImages: (images) => set({ images }),
@@ -242,10 +247,15 @@ export const useImageStore = create<ImageStore>()(
           .sort((a, b) => b.count - a.count); // Sort by count descending
       },
       getSortedAndFilteredImages: () => {
-        const { images, sortBy, sortOrder, filterSettings, searchQuery } = get();
+        const { images, sortBy, sortOrder, filterSettings, searchQuery, selectedGroupId, groupFilteredImageIds } = get();
 
         // フィルタリング
         let filtered = images.filter((img) => {
+          // グループフィルター（selectedGroupIdがnullでない場合）
+          if (selectedGroupId !== null && !groupFilteredImageIds.includes(img.id)) {
+            return false;
+          }
+
           // 検索クエリでフィルター
           if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase();
@@ -367,6 +377,7 @@ export const useImageStore = create<ImageStore>()(
         }),
       clearSelection: () => set({ selectedImageIds: [] }),
       setSelectedGroupId: (id) => set({ selectedGroupId: id }),
+      setGroupFilteredImageIds: (ids) => set({ groupFilteredImageIds: ids }),
       showToast: (message, type) => {
         const id = `toast-${Date.now()}-${Math.random()}`;
         set((state) => ({
