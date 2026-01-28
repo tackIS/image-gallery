@@ -91,7 +91,7 @@ function App() {
   }, [isSelectionMode, toggleSelectAll, clearSelection, toggleSelectionMode]);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col">
       <Header
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
