@@ -31,6 +31,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     selectedGroupId,
     setSelectedGroupId,
     setGroupFilteredImageIds,
+    showToast,
   } = useImageStore();
 
   const [showModal, setShowModal] = useState(false);
@@ -73,13 +74,16 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       await deleteGroup(groupId);
       removeGroup(groupId);
 
-      // 削除したグループが選択されていた場合、選択を解除
+      // 削除したグループが選択されていた場合、選択を解除してフィルターをクリア
       if (selectedGroupId === groupId) {
         setSelectedGroupId(null);
+        setGroupFilteredImageIds([]);
       }
+
+      showToast('Group deleted successfully', 'success');
     } catch (err) {
       console.error('Failed to delete group:', err);
-      alert('Failed to delete group');
+      showToast('Failed to delete group', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -104,6 +108,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       console.error('Failed to get group images:', err);
       setSelectedGroupId(null);
       setGroupFilteredImageIds([]);
+      showToast('Failed to load group images', 'error');
     }
   };
 

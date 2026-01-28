@@ -2,7 +2,7 @@ import { X, CheckSquare, FolderPlus, FolderMinus } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import { useState, useRef, useEffect } from 'react';
 import type { GroupData } from '../types/image';
-import { addImagesToGroup, removeImagesFromGroup, getAllGroups } from '../utils/tauri-commands';
+import { addImagesToGroup, removeImagesFromGroup, getAllGroups, getGroupImages } from '../utils/tauri-commands';
 
 /**
  * 複数選択時のアクションバーコンポーネント
@@ -17,6 +17,7 @@ export default function SelectionBar() {
     groups,
     selectedGroupId,
     setGroups,
+    setGroupFilteredImageIds,
     showToast,
   } = useImageStore();
 
@@ -48,6 +49,12 @@ export default function SelectionBar() {
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
 
+      // 現在フィルター中のグループに追加した場合、フィルターを更新
+      if (selectedGroupId === groupId) {
+        const updatedImageIds = await getGroupImages(groupId);
+        setGroupFilteredImageIds(updatedImageIds);
+      }
+
       setShowAddToGroupMenu(false);
       showToast(
         `${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} added to group`,
@@ -68,6 +75,13 @@ export default function SelectionBar() {
       // グループリストを更新（画像数を反映）
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
+
+      // グループフィルターを更新（削除した画像を除外）
+      const updatedImageIds = await getGroupImages(selectedGroupId);
+      setGroupFilteredImageIds(updatedImageIds);
+
+      // 選択をクリア
+      clearSelection();
 
       showToast(
         `${selectedCount} ${selectedCount === 1 ? 'image' : 'images'} removed from group`,
