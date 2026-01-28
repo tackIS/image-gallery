@@ -25,7 +25,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const {
     groups,
     setGroups,
-    addGroup,
     updateGroup: updateGroupInStore,
     removeGroup,
     selectedGroupId,
@@ -47,15 +46,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       updateGroupInStore(input.id, input);
     } else {
       // 作成モード
-      const groupId = await createGroup(input);
+      await createGroup(input);
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
-
-      // 新しく作成されたグループを取得
-      const newGroup = updatedGroups.find(g => g.id === groupId);
-      if (newGroup) {
-        addGroup(newGroup);
-      }
     }
   };
 
