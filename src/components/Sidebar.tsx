@@ -25,8 +25,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const {
     groups,
     setGroups,
-    updateGroup: updateGroupInStore,
-    removeGroup,
     selectedGroupId,
     setSelectedGroupId,
     setGroupFilteredImageIds,
@@ -43,7 +41,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
       await updateGroup(input);
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
-      updateGroupInStore(input.id, input);
     } else {
       // 作成モード
       await createGroup(input);
@@ -65,7 +62,10 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     try {
       setIsDeleting(true);
       await deleteGroup(groupId);
-      removeGroup(groupId);
+
+      // 削除後に全グループを再取得して状態を更新
+      const updatedGroups = await getAllGroups();
+      setGroups(updatedGroups);
 
       // 削除したグループが選択されていた場合、選択を解除してフィルターをクリア
       if (selectedGroupId === groupId) {
