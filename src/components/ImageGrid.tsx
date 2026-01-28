@@ -8,21 +8,37 @@ import MediaCard from './MediaCard';
  * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
  */
 export default function ImageGrid() {
-  const { images, setSelectedImageId, getSortedImages } = useImageStore();
+  const { images, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
   const sortedImages = getSortedImages();
 
   if (images.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-gray-500">No images or videos found</p>
+        <p className="text-gray-500 dark:text-gray-400">No images or videos found</p>
       </div>
     );
   }
 
   if (sortedImages.length === 0) {
+    // グループフィルター時のメッセージ
+    if (selectedGroupId !== null) {
+      const selectedGroup = groups.find((g) => g.id === selectedGroupId);
+      return (
+        <div className="flex flex-col items-center justify-center py-24 gap-2">
+          <p className="text-gray-500 dark:text-gray-400">
+            No images in "{selectedGroup?.name || 'this group'}"
+          </p>
+          <p className="text-sm text-gray-400 dark:text-gray-500">
+            Add images to this group using selection mode
+          </p>
+        </div>
+      );
+    }
+
+    // 通常のフィルター時のメッセージ
     return (
       <div className="flex items-center justify-center py-24">
-        <p className="text-gray-500">No images match the current filters</p>
+        <p className="text-gray-500 dark:text-gray-400">No images match the current filters</p>
       </div>
     );
   }
