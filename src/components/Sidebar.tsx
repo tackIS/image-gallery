@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Images, Plus } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import {
@@ -6,7 +7,6 @@ import {
   getAllGroups,
   updateGroup,
   deleteGroup,
-  getGroupImages,
 } from '../utils/tauri-commands';
 import GroupItem from './GroupItem';
 import GroupModal from './GroupModal';
@@ -22,6 +22,9 @@ interface SidebarProps {
  * グループ一覧とフィルタリングを管理します
  */
 export default function Sidebar({ isOpen }: SidebarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const {
     groups,
     setGroups,
@@ -34,6 +37,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<GroupData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // 現在のパスからグループIDを抽出
+  const isOnGroupPage = location.pathname.startsWith('/group/');
+  const currentGroupId = isOnGroupPage
+    ? parseInt(location.pathname.split('/').pop() || '', 10)
+    : null;
 
   const handleCreateGroup = async (input: CreateGroupInput | UpdateGroupInput) => {
     if ('id' in input) {
@@ -88,21 +97,14 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   };
 
   const handleSelectAllImages = () => {
+    navigate('/');
     setSelectedGroupId(null);
     setGroupFilteredImageIds([]);
   };
 
-  const handleSelectGroup = async (groupId: number) => {
-    try {
-      setSelectedGroupId(groupId);
-      const imageIds = await getGroupImages(groupId);
-      setGroupFilteredImageIds(imageIds);
-    } catch (err) {
-      console.error('Failed to get group images:', err);
-      setSelectedGroupId(null);
-      setGroupFilteredImageIds([]);
-      showToast('Failed to load group images', 'error');
-    }
+  const handleSelectGroup = (groupId: number) => {
+    // グループアルバムビューに遷移
+    navigate(`/group/${groupId}`);
   };
 
   if (!isOpen) {
@@ -130,7 +132,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           <button
             onClick={handleSelectAllImages}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              selectedGroupId === null
+              !isOnGroupPage
                 ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
                 : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
             }`}
@@ -153,7 +155,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                 <GroupItem
                   key={group.id}
                   group={group}
-                  isSelected={selectedGroupId === group.id}
+                  isSelected={currentGroupId === group.id}
                   onClick={() => handleSelectGroup(group.id)}
                   onEdit={() => handleEditGroup(group)}
                   onDelete={() => handleDeleteGroup(group.id)}

@@ -128,6 +128,23 @@ pub fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_image_groups_group ON image_groups(group_id);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 6,
+            description: "add_group_comments_table",
+            sql: "
+                -- グループコメントテーブル
+                CREATE TABLE IF NOT EXISTS group_comments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    group_id INTEGER NOT NULL,
+                    comment TEXT NOT NULL,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
+                );
+                CREATE INDEX IF NOT EXISTS idx_group_comments_group ON group_comments(group_id);
+                CREATE INDEX IF NOT EXISTS idx_group_comments_created_at ON group_comments(created_at);
+            ",
+            kind: MigrationKind::Up,
         }
     ]
 }

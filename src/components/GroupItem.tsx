@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Folder, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { convertFileSrc } from '@tauri-apps/api/core';
+import { useImageStore } from '../store/imageStore';
 import type { GroupData } from '../types/image';
 
 interface GroupItemProps {
@@ -26,10 +28,16 @@ export default function GroupItem({
   onEdit,
   onDelete,
 }: GroupItemProps) {
+  const { images } = useImageStore();
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // 代表画像を取得
+  const representativeImage = group.representative_image_id
+    ? images.find((img) => img.id === group.representative_image_id)
+    : null;
 
   // メニュー外クリックで閉じる
   useEffect(() => {
@@ -83,15 +91,27 @@ export default function GroupItem({
           : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
       }`}
     >
-      {/* カラーインジケーター */}
-      <div
-        className="w-3 h-3 rounded-full flex-shrink-0"
-        style={{ backgroundColor: group.color }}
-        aria-hidden="true"
-      />
-
-      {/* グループアイコン */}
-      <Folder size={18} className="flex-shrink-0" />
+      {/* 代表画像サムネイルまたはアイコン */}
+      {representativeImage ? (
+        <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0 bg-gray-200 dark:bg-gray-700">
+          <img
+            src={convertFileSrc(representativeImage.file_path)}
+            alt={group.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      ) : (
+        <>
+          {/* カラーインジケーター */}
+          <div
+            className="w-3 h-3 rounded-full flex-shrink-0"
+            style={{ backgroundColor: group.color }}
+            aria-hidden="true"
+          />
+          {/* グループアイコン */}
+          <Folder size={18} className="flex-shrink-0" />
+        </>
+      )}
 
       {/* グループ名 */}
       <span className="flex-1 text-sm font-medium truncate">{group.name}</span>

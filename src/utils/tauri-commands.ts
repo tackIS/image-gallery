@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import Database from '@tauri-apps/plugin-sql';
-import type { ImageData, ImageMetadataUpdate, GroupData, CreateGroupInput, UpdateGroupInput } from '../types/image';
+import type { ImageData, ImageMetadataUpdate, GroupData, CreateGroupInput, UpdateGroupInput, GroupComment, AddCommentInput } from '../types/image';
 
 /**
  * ファイルシステムからスキャンされたメディアファイル情報
@@ -335,4 +335,57 @@ export async function getGroupImages(groupId: number): Promise<number[]> {
  */
 export async function getImageGroups(imageId: number): Promise<number[]> {
   return await invoke<number[]>('get_image_groups', { imageId });
+}
+
+// ============================================================
+// Phase 5: グループアルバムビュー & コメント機能
+// ============================================================
+
+/**
+ * グループIDから詳細情報を取得します
+ * @param groupId グループID
+ * @returns グループ詳細データ
+ * @throws グループ取得に失敗した場合
+ */
+export async function getGroupById(groupId: number): Promise<GroupData> {
+  return await invoke<GroupData>('get_group_by_id', { groupId });
+}
+
+/**
+ * グループの代表画像を設定します
+ * @param groupId グループID
+ * @param imageId 代表画像ID（nullで解除）
+ * @throws 代表画像設定に失敗した場合
+ */
+export async function setRepresentativeImage(groupId: number, imageId: number | null): Promise<void> {
+  return await invoke<void>('set_representative_image', { groupId, imageId });
+}
+
+/**
+ * グループコメントを追加します
+ * @param input コメント追加入力データ
+ * @returns 作成されたコメントのID
+ * @throws コメント追加に失敗した場合
+ */
+export async function addGroupComment(input: AddCommentInput): Promise<number> {
+  return await invoke<number>('add_group_comment', { input });
+}
+
+/**
+ * グループの全コメントを取得します（新しい順）
+ * @param groupId グループID
+ * @returns グループコメントの配列
+ * @throws コメント取得に失敗した場合
+ */
+export async function getGroupComments(groupId: number): Promise<GroupComment[]> {
+  return await invoke<GroupComment[]>('get_group_comments', { groupId });
+}
+
+/**
+ * グループコメントを削除します
+ * @param commentId コメントID
+ * @throws コメント削除に失敗した場合
+ */
+export async function deleteGroupComment(commentId: number): Promise<void> {
+  return await invoke<void>('delete_group_comment', { commentId });
 }

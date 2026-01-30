@@ -406,3 +406,166 @@ pub fn get_image_groups(image_id: i64) -> Result<Vec<i64>, String> {
 
     Ok(group_ids)
 }
+
+// ============================================================
+// Phase 5: グループアルバムビュー & コメント機能
+// ============================================================
+
+/**
+ * グループコメント情報を表す構造体
+ */
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GroupComment {
+    pub id: i64,
+    pub group_id: i64,
+    pub comment: String,
+    pub created_at: String,
+}
+
+/**
+ * グループコメント追加時の入力データ
+ */
+#[derive(Debug, Deserialize)]
+pub struct AddCommentInput {
+    pub group_id: i64,
+    pub comment: String,
+}
+
+/**
+ * グループIDから詳細情報を取得します
+ */
+#[tauri::command]
+pub fn get_group_by_id(group_id: i64) -> Result<GroupData, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT
+            g.id,
+            g.name,
+            g.description,
+            g.color,
+            g.representative_image_id,
+            g.created_at,
+            g.updated_at,
+            COUNT(ig.image_id) as image_count
+        FROM groups g
+        LEFT JOIN image_groups ig ON g.id = ig.group_id
+        WHERE g.id = ?
+        GROUP BY g.id"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let group = stmt.query_row(rusqlite::params![group_id], |row| {
+        Ok(GroupData {
+            id: row.get(0)?,
+            name: row.get(1)?,
+            description: row.get(2)?,
+            color: row.get(3)?,
+            representative_image_id: row.get(4)?,
+            created_at: row.get(5)?,
+            updated_at: row.get(6)?,
+            image_count: row.get(7)?,
+        })
+    })
+    .map_err(|e| format!("Failed to query group: {}", e))?;
+
+    Ok(group)
+}
+
+/**
+ * グループの代表画像を設定します
+ */
+#[tauri::command]
+pub fn set_representative_image(group_id: i64, image_id: Option<i64>) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    conn.execute(
+        "UPDATE groups SET representative_image_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        rusqlite::params![image_id, group_id],
+    )
+    .map_err(|e| format!("Failed to set representative image: {}", e))?;
+
+    Ok(())
+}
+
+/**
+ * グループコメントを追加します
+ */
+#[tauri::command]
+pub fn add_group_comment(input: AddCommentInput) -> Result<i64, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    conn.execute(
+        "INSERT INTO group_comments (group_id, comment) VALUES (?, ?)",
+        rusqlite::params![input.group_id, input.comment],
+    )
+    .map_err(|e| format!("Failed to add group comment: {}", e))?;
+
+    Ok(conn.last_insert_rowid())
+}
+
+/**
+ * グループの全コメントを取得します（新しい順）
+ */
+#[tauri::command]
+pub fn get_group_comments(group_id: i64) -> Result<Vec<GroupComment>, String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    let mut stmt = conn.prepare(
+        "SELECT id, group_id, comment, created_at
+        FROM group_comments
+        WHERE group_id = ?
+        ORDER BY created_at DESC"
+    )
+    .map_err(|e| format!("Failed to prepare statement: {}", e))?;
+
+    let comments = stmt.query_map(rusqlite::params![group_id], |row| {
+        Ok(GroupComment {
+            id: row.get(0)?,
+            group_id: row.get(1)?,
+            comment: row.get(2)?,
+            created_at: row.get(3)?,
+        })
+    })
+    .map_err(|e| format!("Failed to query group comments: {}", e))?
+    .collect::<Result<Vec<_>, _>>()
+    .map_err(|e| format!("Failed to collect comments: {}", e))?;
+
+    Ok(comments)
+}
+
+/**
+ * グループコメントを削除します
+ */
+#[tauri::command]
+pub fn delete_group_comment(comment_id: i64) -> Result<(), String> {
+    use rusqlite::Connection;
+
+    let db_path = crate::db::get_db_path()?;
+    let conn = Connection::open(&db_path)
+        .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    conn.execute(
+        "DELETE FROM group_comments WHERE id = ?",
+        rusqlite::params![comment_id],
+    )
+    .map_err(|e| format!("Failed to delete group comment: {}", e))?;
+
+    Ok(())
+}

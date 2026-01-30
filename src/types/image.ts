@@ -126,3 +126,31 @@ export interface UpdateGroupInput {
   /** 代表画像ID（任意） */
   representative_image_id?: number;
 }
+
+// ============================================================
+// Phase 5: グループアルバムビュー & コメント機能
+// ============================================================
+
+/**
+ * グループコメント情報を表すインターフェース
+ */
+export interface GroupComment {
+  /** コメントID */
+  id: number;
+  /** グループID */
+  group_id: number;
+  /** コメント本文 */
+  comment: string;
+  /** 作成日時（ISO 8601形式） */
+  created_at: string;
+}
+
+/**
+ * グループコメント追加入力
+ */
+export interface AddCommentInput {
+  /** グループID */
+  group_id: number;
+  /** コメント本文 */
+  comment: string;
+}
