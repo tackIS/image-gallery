@@ -19,7 +19,6 @@ function GroupAlbumView() {
   const {
     images: allImages,
     setError,
-    setImages,
     isRepImageSelectionMode,
     setRepImageSelectionMode,
     showToast,
@@ -66,17 +65,10 @@ function GroupAlbumView() {
 
   useEffect(() => {
     loadGroupData();
-  }, [groupId, allImages]);
+  }, [groupId]);
 
   // グループ内の画像のみをフィルタリング
   const groupImages = allImages.filter((img) => groupImageIds.includes(img.id));
-
-  // ストアに表示用の画像をセット（ImageGridで使用）
-  useEffect(() => {
-    if (!isLoading && groupImages.length > 0) {
-      setImages(groupImages);
-    }
-  }, [groupImages, isLoading, setImages]);
 
   // 代表画像選択モード開始
   const handleSetRepresentativeImage = () => {
@@ -176,7 +168,10 @@ function GroupAlbumView() {
               </p>
             </div>
           ) : (
-            <ImageGrid onImageClick={isRepImageSelectionMode ? handleImageClick : undefined} />
+            <ImageGrid
+              images={groupImages}
+              onImageClick={isRepImageSelectionMode ? handleImageClick : undefined}
+            />
           )}
         </div>
 

@@ -4,9 +4,9 @@ import { getGroupComments, addGroupComment, deleteGroupComment } from '../utils/
 import type { GroupComment } from '../types/image';
 import { useImageStore } from '../store/imageStore';
 
-interface GroupCommentsProps {
+type GroupCommentsProps = {
   groupId: number;
-}
+};
 
 function GroupComments({ groupId }: GroupCommentsProps) {
   const { showToast, setError } = useImageStore();

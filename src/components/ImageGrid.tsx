@@ -1,10 +1,13 @@
 import { useImageStore } from '../store/imageStore';
 import MediaCard from './MediaCard';
+import type { ImageData } from '../types/image';
 
-interface ImageGridProps {
+type ImageGridProps = {
   /** カスタム画像クリックハンドラー（代表画像選択モード用） */
   onImageClick?: (imageId: number) => void;
-}
+  /** 表示する画像リスト（指定しない場合はstoreから取得） */
+  images?: ImageData[];
+};
 
 /**
  * メディアグリッド表示コンポーネント
@@ -12,9 +15,12 @@ interface ImageGridProps {
  * データベースに登録された画像・動画をレスポンシブなグリッドレイアウトで表示します。
  * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
  */
-export default function ImageGrid({ onImageClick }: ImageGridProps = {}) {
-  const { images, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
-  const sortedImages = getSortedImages();
+export default function ImageGrid({ onImageClick, images: propsImages }: ImageGridProps) {
+  const { images: storeImages, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
+
+  // propsで画像が渡された場合はそれを使用、なければstoreから取得
+  const images = propsImages || storeImages;
+  const sortedImages = propsImages || getSortedImages();
 
   if (images.length === 0) {
     return (

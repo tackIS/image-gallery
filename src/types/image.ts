@@ -132,9 +132,9 @@ export interface UpdateGroupInput {
 // ============================================================
 
 /**
- * グループコメント情報を表すインターフェース
+ * グループコメント情報を表す型
  */
-export interface GroupComment {
+export type GroupComment = {
   /** コメントID */
   id: number;
   /** グループID */
@@ -143,14 +143,14 @@ export interface GroupComment {
   comment: string;
   /** 作成日時（ISO 8601形式） */
   created_at: string;
-}
+};
 
 /**
  * グループコメント追加入力
  */
-export interface AddCommentInput {
+export type AddCommentInput = {
   /** グループID */
   group_id: number;
   /** コメント本文 */
   comment: string;
-}
+};

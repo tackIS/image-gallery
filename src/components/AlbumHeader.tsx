@@ -4,12 +4,12 @@ import { convertFileSrc } from '@tauri-apps/api/core';
 import type { GroupData, ImageData } from '../types/image';
 import GroupModal from './GroupModal';
 
-interface AlbumHeaderProps {
+type AlbumHeaderProps = {
   group: GroupData;
   representativeImage: ImageData | null;
   onSetRepresentativeImage: () => void;
   onGroupUpdated: () => void;
-}
+};
 
 function AlbumHeader({ group, representativeImage, onSetRepresentativeImage, onGroupUpdated }: AlbumHeaderProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
