@@ -19,10 +19,13 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
   const { images: storeImages, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
 
   // propsで画像が渡された場合はそれを使用、なければstoreから取得
-  const images = propsImages || storeImages;
-  const sortedImages = propsImages || getSortedImages();
+  // ?? 演算子を使うことで、propsImagesがnull/undefinedの場合のみ代替値を使用
+  const displayImages = propsImages ?? getSortedImages();
 
-  if (images.length === 0) {
+  // 空チェック用（propsImagesまたはstoreImagesを使用）
+  const allImages = propsImages ?? storeImages;
+
+  if (allImages.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
         <p className="text-gray-500 dark:text-gray-400">No images or videos found</p>
@@ -30,7 +33,7 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
     );
   }
 
-  if (sortedImages.length === 0) {
+  if (displayImages.length === 0) {
     // グループフィルター時のメッセージ
     if (selectedGroupId !== null) {
       const selectedGroup = groups.find((g) => g.id === selectedGroupId);
@@ -64,7 +67,7 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-4">
-      {sortedImages.map((media) => (
+      {displayImages.map((media) => (
         <MediaCard
           key={media.id}
           media={media}
