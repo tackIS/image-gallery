@@ -22,6 +22,7 @@ function GroupAlbumView() {
     isRepImageSelectionMode,
     setRepImageSelectionMode,
     showToast,
+    updateGroup,
   } = useImageStore();
 
   const [group, setGroup] = useState<GroupData | null>(null);
@@ -43,6 +44,14 @@ function GroupAlbumView() {
       // グループ情報を取得
       const groupData = await getGroupById(groupId);
       setGroup(groupData);
+
+      // グローバルのグループ配列も更新
+      updateGroup(groupId, {
+        name: groupData.name,
+        description: groupData.description,
+        color: groupData.color,
+        representative_image_id: groupData.representative_image_id,
+      });
 
       // グループ内の画像IDを取得
       const imageIds = await getGroupImages(groupId);
@@ -67,6 +76,14 @@ function GroupAlbumView() {
     loadGroupData();
   }, [groupId]);
 
+  // allImagesが更新されたら代表画像を再設定
+  useEffect(() => {
+    if (group?.representative_image_id && allImages.length > 0) {
+      const repImage = allImages.find((img) => img.id === group.representative_image_id);
+      setRepresentativeImageState(repImage || null);
+    }
+  }, [allImages, group?.representative_image_id]);
+
   // グループ内の画像のみをフィルタリング
   const groupImages = allImages.filter((img) => groupImageIds.includes(img.id));
 
@@ -81,14 +98,22 @@ function GroupAlbumView() {
   const handleImageClick = async (imageId: number) => {
     if (!isRepImageSelectionMode || !groupId) return;
 
+    console.log('=== Representative Image Selection ===');
+    console.log('Group ID:', groupId);
+    console.log('Clicked Image ID:', imageId);
+    console.log('Group Images:', groupImages.map(img => ({ id: img.id, name: img.file_name })));
+
     try {
       await setRepresentativeImage(groupId, imageId);
       setRepImageSelectionMode(false, null);
       showToast('Representative image set successfully', 'success');
+
+      // グループデータを再読み込み（グローバル状態も更新される）
       await loadGroupData();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       showToast('Failed to set representative image', 'error');
+      console.error('Failed to set representative image:', err);
     }
   };
 

@@ -23,8 +23,16 @@ function MainGallery() {
     toggleSelectAll,
     clearSelection,
     toggleSelectionMode,
+    setSelectedGroupId,
+    setGroupFilteredImageIds,
   } = useImageStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // メインギャラリーに戻った時にグループフィルター状態をクリア
+  useEffect(() => {
+    setSelectedGroupId(null);
+    setGroupFilteredImageIds([]);
+  }, [setSelectedGroupId, setGroupFilteredImageIds]);
 
   useEffect(() => {
     const init = async () => {
