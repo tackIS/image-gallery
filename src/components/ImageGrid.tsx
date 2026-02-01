@@ -72,6 +72,7 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
           key={media.id}
           media={media}
           onClick={() => handleImageClick(media.id)}
+          forceClick={!!onImageClick}
         />
       ))}
     </div>

@@ -8,6 +8,8 @@ import type { ImageData } from '../types/image';
 interface MediaCardProps {
   media: ImageData;
   onClick: () => void;
+  /** trueの場合、isSelectionModeを無視してonClickを呼ぶ */
+  forceClick?: boolean;
 }
 
 /**
@@ -17,7 +19,7 @@ interface MediaCardProps {
  * 動画の場合はvideoタグでサムネイル表示し、再生アイコンを表示します。
  * エラー時には適切なエラーメッセージを表示します。
  */
-export default function MediaCard({ media, onClick }: MediaCardProps) {
+export default function MediaCard({ media, onClick, forceClick }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
@@ -28,7 +30,10 @@ export default function MediaCard({ media, onClick }: MediaCardProps) {
   const isSelected = selectedImageIds.includes(media.id);
 
   const handleCardClick = () => {
-    if (isSelectionMode) {
+    if (forceClick) {
+      // forceClick時: isSelectionModeを無視してonClickを呼ぶ
+      onClick();
+    } else if (isSelectionMode) {
       // 選択モード時: 選択/解除をトグル
       toggleImageSelection(media.id);
     } else {

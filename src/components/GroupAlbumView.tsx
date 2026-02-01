@@ -98,18 +98,22 @@ function GroupAlbumView() {
   const handleImageClick = async (imageId: number) => {
     if (!isRepImageSelectionMode || !groupId) return;
 
-    console.log('=== Representative Image Selection ===');
-    console.log('Group ID:', groupId);
-    console.log('Clicked Image ID:', imageId);
-    console.log('Group Images:', groupImages.map(img => ({ id: img.id, name: img.file_name })));
-
     try {
+      // バックエンドに代表画像を保存
       await setRepresentativeImage(groupId, imageId);
       setRepImageSelectionMode(false, null);
       showToast('Representative image set successfully', 'success');
 
-      // グループデータを再読み込み（グローバル状態も更新される）
-      await loadGroupData();
+      // 即座にローカル状態を更新（stale closure回避）
+      const selectedImage = allImages.find((img) => img.id === imageId) || null;
+      setRepresentativeImageState(selectedImage);
+
+      // グローバルのグループ配列も即座に更新
+      updateGroup(groupId, { representative_image_id: imageId });
+
+      // バックエンドから最新のグループ情報を取得して同期
+      const freshGroup = await getGroupById(groupId);
+      setGroup(freshGroup);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       showToast('Failed to set representative image', 'error');
