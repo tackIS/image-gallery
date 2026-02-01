@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Edit2, Image as ImageIcon, Folder } from 'lucide-react';
 import { convertFileSrc } from '@tauri-apps/api/core';
-import type { GroupData, ImageData } from '../types/image';
+import type { GroupData, ImageData, CreateGroupInput, UpdateGroupInput } from '../types/image';
+import { updateGroup } from '../utils/tauri-commands';
 import GroupModal from './GroupModal';
 
 type AlbumHeaderProps = {
@@ -86,7 +87,10 @@ function AlbumHeader({ group, representativeImage, onSetRepresentativeImage, onG
         <GroupModal
           group={group}
           onClose={() => setIsEditModalOpen(false)}
-          onSave={async () => {
+          onSave={async (input: CreateGroupInput | UpdateGroupInput) => {
+            if ('id' in input) {
+              await updateGroup(input);
+            }
             setIsEditModalOpen(false);
             onGroupUpdated();
           }}

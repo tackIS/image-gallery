@@ -74,7 +74,8 @@ function GroupAlbumView() {
 
   useEffect(() => {
     loadGroupData();
-  }, [groupId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId, allImages.length]);
 
   // allImagesが更新されたら代表画像を再設定
   useEffect(() => {
@@ -149,7 +150,7 @@ function GroupAlbumView() {
           <p className="text-gray-600 dark:text-gray-400 mb-4">Group not found</p>
           <button
             onClick={() => navigate('/')}
-            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg"
+            className="px-4 py-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white rounded-lg transition-colors"
           >
             Back to Gallery
           </button>

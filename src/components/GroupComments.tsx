@@ -74,7 +74,8 @@ function GroupComments({ groupId }: GroupCommentsProps) {
 
   // タイムスタンプをフォーマット
   const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
+    // SQLiteのCURRENT_TIMESTAMPはUTCなので、明示的にUTCとしてパース
+    const date = new Date(timestamp.replace(' ', 'T') + 'Z');
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMinutes = Math.floor(diffMs / 60000);
