@@ -93,6 +93,12 @@ interface ImageStore {
   /** トースト通知の配列 */
   toasts: Toast[];
 
+  // Phase 5: 代表画像選択モード
+  /** 代表画像選択モードかどうか */
+  isRepImageSelectionMode: boolean;
+  /** 代表画像選択中のグループID */
+  repImageSelectionGroupId: number | null;
+
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
   /** 現在のディレクトリパスを設定します */
@@ -163,6 +169,10 @@ interface ImageStore {
   showToast: (message: string, type: ToastType) => void;
   /** トースト通知を削除します */
   removeToast: (id: string) => void;
+
+  // Phase 5: 代表画像選択モードアクション
+  /** 代表画像選択モードを設定します */
+  setRepImageSelectionMode: (mode: boolean, groupId?: number | null) => void;
 }
 
 /**
@@ -198,6 +208,10 @@ export const useImageStore = create<ImageStore>()(
       selectedGroupId: null,
       groupFilteredImageIds: [],
       toasts: [],
+
+      // Phase 5: 代表画像選択モード
+      isRepImageSelectionMode: false,
+      repImageSelectionGroupId: null,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -394,6 +408,10 @@ export const useImageStore = create<ImageStore>()(
         set((state) => ({
           toasts: state.toasts.filter((t) => t.id !== id),
         })),
+
+      // Phase 5: 代表画像選択モード
+      setRepImageSelectionMode: (mode, groupId) =>
+        set({ isRepImageSelectionMode: mode, repImageSelectionGroupId: groupId ?? null }),
     }),
     {
       name: 'image-gallery-settings',

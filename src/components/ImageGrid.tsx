@@ -1,5 +1,13 @@
 import { useImageStore } from '../store/imageStore';
 import MediaCard from './MediaCard';
+import type { ImageData } from '../types/image';
+
+type ImageGridProps = {
+  /** カスタム画像クリックハンドラー（代表画像選択モード用） */
+  onImageClick?: (imageId: number) => void;
+  /** 表示する画像リスト（指定しない場合はstoreから取得） */
+  images?: ImageData[];
+};
 
 /**
  * メディアグリッド表示コンポーネント
@@ -7,11 +15,17 @@ import MediaCard from './MediaCard';
  * データベースに登録された画像・動画をレスポンシブなグリッドレイアウトで表示します。
  * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
  */
-export default function ImageGrid() {
-  const { images, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
-  const sortedImages = getSortedImages();
+export default function ImageGrid({ onImageClick, images: propsImages }: ImageGridProps) {
+  const { images: storeImages, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
 
-  if (images.length === 0) {
+  // propsで画像が渡された場合はそれを使用、なければstoreから取得
+  // ?? 演算子を使うことで、propsImagesがnull/undefinedの場合のみ代替値を使用
+  const displayImages = propsImages ?? getSortedImages();
+
+  // 空チェック用（propsImagesまたはstoreImagesを使用）
+  const allImages = propsImages ?? storeImages;
+
+  if (allImages.length === 0) {
     return (
       <div className="flex items-center justify-center py-24">
         <p className="text-gray-500 dark:text-gray-400">No images or videos found</p>
@@ -19,7 +33,7 @@ export default function ImageGrid() {
     );
   }
 
-  if (sortedImages.length === 0) {
+  if (displayImages.length === 0) {
     // グループフィルター時のメッセージ
     if (selectedGroupId !== null) {
       const selectedGroup = groups.find((g) => g.id === selectedGroupId);
@@ -43,13 +57,22 @@ export default function ImageGrid() {
     );
   }
 
+  const handleImageClick = (imageId: number) => {
+    if (onImageClick) {
+      onImageClick(imageId);
+    } else {
+      setSelectedImageId(imageId);
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-4">
-      {sortedImages.map((media) => (
+      {displayImages.map((media) => (
         <MediaCard
           key={media.id}
           media={media}
-          onClick={() => setSelectedImageId(media.id)}
+          onClick={() => handleImageClick(media.id)}
+          forceClick={!!onImageClick}
         />
       ))}
     </div>

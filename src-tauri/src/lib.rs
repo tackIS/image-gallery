@@ -50,6 +50,12 @@ pub fn run() {
       remove_images_from_group,
       get_group_images,
       get_image_groups,
+      // Phase 5: グループアルバムビュー & コメント機能
+      get_group_by_id,
+      set_representative_image,
+      add_group_comment,
+      get_group_comments,
+      delete_group_comment,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
