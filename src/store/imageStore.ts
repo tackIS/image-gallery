@@ -420,7 +420,7 @@ export const useImageStore = create<ImageStore>()(
         sortOrder: state.sortOrder,
         filterSettings: state.filterSettings,
         slideshowInterval: state.slideshowInterval,
-        selectedGroupId: state.selectedGroupId, // グループフィルターを永続化
+        // selectedGroupIdは永続化しない（起動時は常に"All Images"表示）
       }),
     }
   )
