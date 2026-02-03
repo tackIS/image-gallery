@@ -370,6 +370,9 @@ export const useImageStore = create<ImageStore>()(
           isSelectionMode: !state.isSelectionMode,
           // 選択モード終了時は選択をクリア
           selectedImageIds: state.isSelectionMode ? [] : state.selectedImageIds,
+          // 選択モード開始時は代表画像選択モードをクリア
+          isRepImageSelectionMode: state.isSelectionMode ? state.isRepImageSelectionMode : false,
+          repImageSelectionGroupId: state.isSelectionMode ? state.repImageSelectionGroupId : null,
         })),
       toggleImageSelection: (id) =>
         set((state) => ({
@@ -411,7 +414,13 @@ export const useImageStore = create<ImageStore>()(
 
       // Phase 5: 代表画像選択モード
       setRepImageSelectionMode: (mode, groupId) =>
-        set({ isRepImageSelectionMode: mode, repImageSelectionGroupId: groupId ?? null }),
+        set((state) => ({
+          isRepImageSelectionMode: mode,
+          repImageSelectionGroupId: groupId ?? null,
+          // 代表画像選択モード開始時は複数選択モードをクリア
+          isSelectionMode: mode ? false : state.isSelectionMode,
+          selectedImageIds: mode ? [] : state.selectedImageIds,
+        })),
     }),
     {
       name: 'image-gallery-settings',
