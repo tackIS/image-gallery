@@ -291,8 +291,12 @@ pub fn update_group(input: UpdateGroupInput) -> Result<(), String> {
     let query = format!("UPDATE groups SET {} WHERE id = ?", updates.join(", "));
     let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    conn.execute(&query, params_refs.as_slice())
+    let affected_rows = conn.execute(&query, params_refs.as_slice())
         .map_err(|e| format!("Failed to update group: {}", e))?;
+
+    if affected_rows == 0 {
+        return Err(format!("Group with ID {} not found", input.id));
+    }
 
     Ok(())
 }
@@ -309,8 +313,12 @@ pub fn delete_group(group_id: i64) -> Result<(), String> {
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
     // CASCADE設定により、image_groups の関連レコードも自動削除される
-    conn.execute("DELETE FROM groups WHERE id = ?", rusqlite::params![group_id])
+    let affected_rows = conn.execute("DELETE FROM groups WHERE id = ?", rusqlite::params![group_id])
         .map_err(|e| format!("Failed to delete group: {}", e))?;
+
+    if affected_rows == 0 {
+        return Err(format!("Group with ID {} not found", group_id));
+    }
 
     Ok(())
 }
