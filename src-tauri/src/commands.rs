@@ -349,11 +349,13 @@ pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), Str
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
     for image_id in image_ids {
-        // UNIQUE制約により重複挿入は無視される
-        let _ = conn.execute(
+        // UNIQUE制約により重複挿入は無視される（INSERT OR IGNORE）
+        // ただし、その他のエラー（DB接続エラー等）は検出する
+        conn.execute(
             "INSERT OR IGNORE INTO image_groups (image_id, group_id) VALUES (?, ?)",
             rusqlite::params![image_id, group_id],
-        );
+        )
+        .map_err(|e| format!("Failed to add image {} to group: {}", image_id, e))?;
     }
 
     Ok(())
