@@ -1,6 +1,76 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 
+// ============================================================
+// バリデーション用ヘルパー関数
+// ============================================================
+
+/// グループ名のバリデーション（1〜100文字）
+fn validate_group_name(name: &str) -> Result<String, String> {
+    let trimmed = name.trim();
+    if trimmed.is_empty() {
+        return Err("Group name cannot be empty".to_string());
+    }
+    if trimmed.chars().count() > 100 {
+        return Err("Group name is too long (max 100 characters)".to_string());
+    }
+    Ok(trimmed.to_string())
+}
+
+/// グループ説明のバリデーション（最大500文字）
+fn validate_group_description(description: &Option<String>) -> Result<Option<String>, String> {
+    match description {
+        Some(desc) => {
+            let trimmed = desc.trim();
+            if trimmed.chars().count() > 500 {
+                return Err("Description is too long (max 500 characters)".to_string());
+            }
+            if trimmed.is_empty() {
+                Ok(None)
+            } else {
+                Ok(Some(trimmed.to_string()))
+            }
+        }
+        None => Ok(None),
+    }
+}
+
+/// カラーコードのバリデーション（HEX形式: #RGB or #RRGGBB）
+fn validate_color(color: &str) -> Result<String, String> {
+    let trimmed = color.trim();
+
+    // #で始まるかチェック
+    if !trimmed.starts_with('#') {
+        return Err("Invalid color format: must start with '#'".to_string());
+    }
+
+    let hex_part = &trimmed[1..];
+
+    // 長さチェック（3文字または6文字）
+    if hex_part.len() != 3 && hex_part.len() != 6 {
+        return Err("Invalid color format: must be #RGB or #RRGGBB".to_string());
+    }
+
+    // 16進数文字のみかチェック
+    if !hex_part.chars().all(|c| c.is_ascii_hexdigit()) {
+        return Err("Invalid color format: must contain only hexadecimal characters".to_string());
+    }
+
+    Ok(trimmed.to_string())
+}
+
+/// コメントのバリデーション（1〜500文字）
+fn validate_comment(comment: &str) -> Result<String, String> {
+    let trimmed = comment.trim();
+    if trimmed.is_empty() {
+        return Err("Comment cannot be empty".to_string());
+    }
+    if trimmed.chars().count() > 500 {
+        return Err("Comment is too long (max 500 characters)".to_string());
+    }
+    Ok(trimmed.to_string())
+}
+
 #[tauri::command]
 pub async fn initialize_database() -> Result<String, String> {
     crate::db::init_db().await?;
@@ -197,17 +267,38 @@ pub struct UpdateGroupInput {
 pub fn create_group(input: CreateGroupInput) -> Result<i64, String> {
     use rusqlite::Connection;
 
+    // バリデーション
+    let name = validate_group_name(&input.name)?;
+    let description = validate_group_description(&input.description)?;
+    let color = match &input.color {
+        Some(c) => validate_color(c)?,
+        None => "#3b82f6".to_string(),
+    };
+
     let db_path = crate::db::get_db_path()?;
     let conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    let color = input.color.unwrap_or_else(|| "#3b82f6".to_string());
+    // 代表画像IDが指定されている場合、画像の存在確認
+    if let Some(image_id) = input.representative_image_id {
+        let image_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM images WHERE id = ?",
+                rusqlite::params![image_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_exists {
+            return Err(format!("Representative image with ID {} not found", image_id));
+        }
+    }
 
     conn.execute(
         "INSERT INTO groups (name, description, color, representative_image_id) VALUES (?, ?, ?, ?)",
         rusqlite::params![
-            input.name,
-            input.description,
+            name,
+            description,
             color,
             input.representative_image_id,
         ],
@@ -275,22 +366,82 @@ pub fn update_group(input: UpdateGroupInput) -> Result<(), String> {
     let conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
+    // グループの存在確認
+    let group_exists: bool = conn
+        .query_row(
+            "SELECT 1 FROM groups WHERE id = ?",
+            rusqlite::params![input.id],
+            |_| Ok(true),
+        )
+        .unwrap_or(false);
+
+    if !group_exists {
+        return Err(format!("Group with ID {} not found", input.id));
+    }
+
     let mut updates = vec![];
     let mut params: Vec<Box<dyn rusqlite::ToSql>> = vec![];
 
+    // 名前のバリデーションと追加
     if let Some(name) = input.name {
+        let validated_name = validate_group_name(&name)?;
         updates.push("name = ?");
-        params.push(Box::new(name));
+        params.push(Box::new(validated_name));
     }
+
+    // 説明のバリデーションと追加
     if let Some(description) = input.description {
+        // 空文字列の場合はNULLに設定
+        let trimmed = description.trim();
+        if trimmed.chars().count() > 500 {
+            return Err("Description is too long (max 500 characters)".to_string());
+        }
         updates.push("description = ?");
-        params.push(Box::new(description));
+        if trimmed.is_empty() {
+            params.push(Box::new(None::<String>));
+        } else {
+            params.push(Box::new(trimmed.to_string()));
+        }
     }
+
+    // カラーコードのバリデーションと追加
     if let Some(color) = input.color {
+        let validated_color = validate_color(&color)?;
         updates.push("color = ?");
-        params.push(Box::new(color));
+        params.push(Box::new(validated_color));
     }
+
+    // 代表画像IDのバリデーションと追加
     if let Some(rep_id) = input.representative_image_id {
+        // 画像の存在確認
+        let image_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM images WHERE id = ?",
+                rusqlite::params![rep_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_exists {
+            return Err(format!("Representative image with ID {} not found", rep_id));
+        }
+
+        // グループに属しているか確認
+        let image_in_group: bool = conn
+            .query_row(
+                "SELECT 1 FROM image_groups WHERE image_id = ? AND group_id = ?",
+                rusqlite::params![rep_id, input.id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_in_group {
+            return Err(format!(
+                "Image {} does not belong to group {}",
+                rep_id, input.id
+            ));
+        }
+
         updates.push("representative_image_id = ?");
         params.push(Box::new(rep_id));
     }
@@ -305,12 +456,8 @@ pub fn update_group(input: UpdateGroupInput) -> Result<(), String> {
     let query = format!("UPDATE groups SET {} WHERE id = ?", updates.join(", "));
     let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-    let affected_rows = conn.execute(&query, params_refs.as_slice())
+    conn.execute(&query, params_refs.as_slice())
         .map_err(|e| format!("Failed to update group: {}", e))?;
-
-    if affected_rows == 0 {
-        return Err(format!("Group with ID {} not found", input.id));
-    }
 
     Ok(())
 }
@@ -344,19 +491,59 @@ pub fn delete_group(group_id: i64) -> Result<(), String> {
 pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
     use rusqlite::Connection;
 
+    // 空の配列のチェック
+    if image_ids.is_empty() {
+        return Ok(());
+    }
+
     let db_path = crate::db::get_db_path()?;
-    let conn = Connection::open(&db_path)
+    let mut conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    for image_id in image_ids {
+    // グループの存在確認
+    let group_exists: bool = conn
+        .query_row(
+            "SELECT 1 FROM groups WHERE id = ?",
+            rusqlite::params![group_id],
+            |_| Ok(true),
+        )
+        .unwrap_or(false);
+
+    if !group_exists {
+        return Err(format!("Group with ID {} not found", group_id));
+    }
+
+    // トランザクション開始（複数の書き込み操作を原子的に実行）
+    let tx = conn.transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    // 各画像の存在確認と追加
+    for image_id in &image_ids {
+        // 画像の存在確認
+        let image_exists: bool = tx
+            .query_row(
+                "SELECT 1 FROM images WHERE id = ?",
+                rusqlite::params![image_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_exists {
+            return Err(format!("Image with ID {} not found", image_id));
+        }
+
         // UNIQUE制約により重複挿入は無視される（INSERT OR IGNORE）
         // ただし、その他のエラー（DB接続エラー等）は検出する
-        conn.execute(
+        tx.execute(
             "INSERT OR IGNORE INTO image_groups (image_id, group_id) VALUES (?, ?)",
             rusqlite::params![image_id, group_id],
         )
         .map_err(|e| format!("Failed to add image {} to group: {}", image_id, e))?;
     }
+
+    // トランザクションをコミット
+    tx.commit()
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
     Ok(())
 }
@@ -368,17 +555,30 @@ pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), Str
 pub fn remove_images_from_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
     use rusqlite::Connection;
 
+    // 空の配列のチェック
+    if image_ids.is_empty() {
+        return Ok(());
+    }
+
     let db_path = crate::db::get_db_path()?;
-    let conn = Connection::open(&db_path)
+    let mut conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    for image_id in image_ids {
-        conn.execute(
+    // トランザクション開始（複数の書き込み操作を原子的に実行）
+    let tx = conn.transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    for image_id in &image_ids {
+        tx.execute(
             "DELETE FROM image_groups WHERE image_id = ? AND group_id = ?",
             rusqlite::params![image_id, group_id],
         )
         .map_err(|e| format!("Failed to remove image from group: {}", e))?;
     }
+
+    // トランザクションをコミット
+    tx.commit()
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
     Ok(())
 }
@@ -560,13 +760,29 @@ pub fn set_representative_image(group_id: i64, image_id: Option<i64>) -> Result<
 pub fn add_group_comment(input: AddCommentInput) -> Result<i64, String> {
     use rusqlite::Connection;
 
+    // コメントのバリデーション
+    let comment = validate_comment(&input.comment)?;
+
     let db_path = crate::db::get_db_path()?;
     let conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
+    // グループの存在確認
+    let group_exists: bool = conn
+        .query_row(
+            "SELECT 1 FROM groups WHERE id = ?",
+            rusqlite::params![input.group_id],
+            |_| Ok(true),
+        )
+        .unwrap_or(false);
+
+    if !group_exists {
+        return Err(format!("Group with ID {} not found", input.group_id));
+    }
+
     conn.execute(
         "INSERT INTO group_comments (group_id, comment) VALUES (?, ?)",
-        rusqlite::params![input.group_id, input.comment],
+        rusqlite::params![input.group_id, comment],
     )
     .map_err(|e| format!("Failed to add group comment: {}", e))?;
 
