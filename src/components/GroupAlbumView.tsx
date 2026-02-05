@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import { getGroupById, getGroupImages, setRepresentativeImage } from '../utils/tauri-commands';
-import type { GroupData, ImageData } from '../types/image';
+import type { GroupData } from '../types/image';
 import AlbumHeader from './AlbumHeader';
 import ImageGrid from './ImageGrid';
 import ImageDetail from './ImageDetail';
@@ -29,7 +29,13 @@ function GroupAlbumView() {
   const [group, setGroup] = useState<GroupData | null>(null);
   const [groupImageIds, setGroupImageIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [representativeImage, setRepresentativeImageState] = useState<ImageData | null>(null);
+
+  // 代表画像をuseMemoで計算（パフォーマンス最適化）
+  // allImages全体の変更ではなく、代表画像IDが変更された時のみ実質的に更新される
+  const representativeImage = useMemo(() => {
+    if (!group?.representative_image_id) return null;
+    return allImages.find((img) => img.id === group.representative_image_id) || null;
+  }, [allImages, group?.representative_image_id]);
 
   // グループデータとグループ内画像を読み込み
   const loadGroupData = async () => {
@@ -58,13 +64,7 @@ function GroupAlbumView() {
       const imageIds = await getGroupImages(groupId);
       setGroupImageIds(imageIds);
 
-      // 代表画像を設定
-      if (groupData.representative_image_id) {
-        const repImage = allImages.find((img) => img.id === groupData.representative_image_id);
-        setRepresentativeImageState(repImage || null);
-      } else {
-        setRepresentativeImageState(null);
-      }
+      // 代表画像はuseMemoで自動計算されるため、ここでの設定は不要
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       console.error('Failed to load group data:', err);
@@ -77,14 +77,6 @@ function GroupAlbumView() {
     loadGroupData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId]);
-
-  // allImagesが更新されたら代表画像を再設定
-  useEffect(() => {
-    if (group?.representative_image_id && allImages.length > 0) {
-      const repImage = allImages.find((img) => img.id === group.representative_image_id);
-      setRepresentativeImageState(repImage || null);
-    }
-  }, [allImages, group?.representative_image_id]);
 
   // グループ内の画像のみをフィルタリング
   const groupImages = allImages.filter((img) => groupImageIds.includes(img.id));
@@ -107,9 +99,8 @@ function GroupAlbumView() {
       setRepImageSelectionMode(false, null);
       showToast('Representative image set successfully', 'success');
 
-      // 即座にローカル状態を更新（stale closure回避）
-      const selectedImage = allImages.find((img) => img.id === imageId) || null;
-      setRepresentativeImageState(selectedImage);
+      // ローカルのgroup状態を即座に更新（useMemoが再計算される）
+      setGroup((prev) => (prev ? { ...prev, representative_image_id: imageId } : null));
 
       // グローバルのグループ配列も即座に更新
       updateGroup(groupId, { representative_image_id: imageId });
