@@ -502,6 +502,7 @@ pub fn get_group_by_id(group_id: i64) -> Result<GroupData, String> {
 
 /**
  * グループの代表画像を設定します
+ * 代表画像はそのグループに属している必要があります
  */
 #[tauri::command]
 pub fn set_representative_image(group_id: i64, image_id: Option<i64>) -> Result<(), String> {
@@ -510,6 +511,38 @@ pub fn set_representative_image(group_id: i64, image_id: Option<i64>) -> Result<
     let db_path = crate::db::get_db_path()?;
     let conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
+
+    // NULLに設定する場合はチェック不要
+    if let Some(id) = image_id {
+        // 画像の存在確認
+        let image_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM images WHERE id = ?",
+                rusqlite::params![id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_exists {
+            return Err(format!("Image with ID {} not found", id));
+        }
+
+        // グループに属しているか確認
+        let image_in_group: bool = conn
+            .query_row(
+                "SELECT 1 FROM image_groups WHERE image_id = ? AND group_id = ?",
+                rusqlite::params![id, group_id],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+
+        if !image_in_group {
+            return Err(format!(
+                "Image {} does not belong to group {}",
+                id, group_id
+            ));
+        }
+    }
 
     conn.execute(
         "UPDATE groups SET representative_image_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
