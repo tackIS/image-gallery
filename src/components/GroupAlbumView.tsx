@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
@@ -38,7 +38,7 @@ function GroupAlbumView() {
   }, [allImages, group?.representative_image_id]);
 
   // グループデータとグループ内画像を読み込み
-  const loadGroupData = async () => {
+  const loadGroupData = useCallback(async () => {
     if (!groupId) {
       setError('Invalid group ID');
       setIsLoading(false);
@@ -71,12 +71,11 @@ function GroupAlbumView() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [groupId, setError, updateGroup]);
 
   useEffect(() => {
     loadGroupData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId]);
+  }, [loadGroupData]);
 
   // グループ内の画像のみをフィルタリング
   const groupImages = allImages.filter((img) => groupImageIds.includes(img.id));
