@@ -102,6 +102,7 @@ function GroupAlbumView() {
     try {
       // バックエンドに代表画像を保存
       await setRepresentativeImage(groupId, imageId);
+
       setRepImageSelectionMode(false, null);
       showToast('Representative image set successfully', 'success');
 

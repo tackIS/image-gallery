@@ -43,6 +43,7 @@ pub fn backup_database() -> Result<String, String> {
 /**
  * データベースをリセット（削除）します
  * 注意: この操作は元に戻せません
+ * サムネイルディレクトリも同時に削除します
  */
 #[tauri::command]
 pub fn reset_database() -> Result<String, String> {
@@ -57,6 +58,19 @@ pub fn reset_database() -> Result<String, String> {
         .map_err(|e| format!("Failed to delete database: {}", e))?;
 
     println!("Database deleted: {:?}", db_path);
+
+    // サムネイルディレクトリも削除（存在する場合）
+    if let Some(db_dir) = db_path.parent() {
+        let thumbnail_dir = db_dir.join("thumbnails");
+        if thumbnail_dir.exists() {
+            if let Err(e) = fs::remove_dir_all(&thumbnail_dir) {
+                eprintln!("Warning: Failed to delete thumbnails directory: {}", e);
+            } else {
+                println!("Thumbnails directory deleted: {:?}", thumbnail_dir);
+            }
+        }
+    }
+
     Ok("Database reset successfully".to_string())
 }
 

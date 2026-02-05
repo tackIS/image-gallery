@@ -30,3 +30,6 @@ npm-debug.log*
 *.db
 *.sqlite
 *.sqlite3
+
+# Other
+.tmp/
