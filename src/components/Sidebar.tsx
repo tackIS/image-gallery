@@ -32,6 +32,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     setSelectedGroupId,
     setGroupFilteredImageIds,
     showToast,
+    resetAllModes,
   } = useImageStore();
 
   const [showModal, setShowModal] = useState(false);
@@ -97,12 +98,16 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   };
 
   const handleSelectAllImages = () => {
+    // ページ遷移前にすべてのモード状態をクリア
+    resetAllModes();
     navigate('/');
     setSelectedGroupId(null);
     setGroupFilteredImageIds([]);
   };
 
   const handleSelectGroup = (groupId: number) => {
+    // ページ遷移前にすべてのモード状態をクリア
+    resetAllModes();
     // グループアルバムビューに遷移
     navigate(`/group/${groupId}`);
   };

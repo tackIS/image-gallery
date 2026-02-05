@@ -173,6 +173,9 @@ interface ImageStore {
   // Phase 5: 代表画像選択モードアクション
   /** 代表画像選択モードを設定します */
   setRepImageSelectionMode: (mode: boolean, groupId?: number | null) => void;
+
+  /** すべての選択モードをリセットします（ページ遷移時に使用） */
+  resetAllModes: () => void;
 }
 
 /**
@@ -421,6 +424,15 @@ export const useImageStore = create<ImageStore>()(
           isSelectionMode: mode ? false : state.isSelectionMode,
           selectedImageIds: mode ? [] : state.selectedImageIds,
         })),
+
+      // ページ遷移時にすべての選択モードをリセット
+      resetAllModes: () =>
+        set({
+          isSelectionMode: false,
+          selectedImageIds: [],
+          isRepImageSelectionMode: false,
+          repImageSelectionGroupId: null,
+        }),
     }),
     {
       name: 'image-gallery-settings',
