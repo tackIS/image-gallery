@@ -75,7 +75,7 @@ function GroupAlbumView() {
   useEffect(() => {
     loadGroupData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [groupId, allImages.length]);
+  }, [groupId]);
 
   // allImagesが更新されたら代表画像を再設定
   useEffect(() => {
@@ -102,6 +102,7 @@ function GroupAlbumView() {
     try {
       // バックエンドに代表画像を保存
       await setRepresentativeImage(groupId, imageId);
+
       setRepImageSelectionMode(false, null);
       showToast('Representative image set successfully', 'success');
 
