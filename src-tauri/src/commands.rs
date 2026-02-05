@@ -491,8 +491,13 @@ pub fn delete_group(group_id: i64) -> Result<(), String> {
 pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
     use rusqlite::Connection;
 
+    // 空の配列のチェック
+    if image_ids.is_empty() {
+        return Ok(());
+    }
+
     let db_path = crate::db::get_db_path()?;
-    let conn = Connection::open(&db_path)
+    let mut conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
     // グループの存在確認
@@ -508,15 +513,14 @@ pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), Str
         return Err(format!("Group with ID {} not found", group_id));
     }
 
-    // 空の配列のチェック
-    if image_ids.is_empty() {
-        return Ok(());
-    }
+    // トランザクション開始（複数の書き込み操作を原子的に実行）
+    let tx = conn.transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
 
     // 各画像の存在確認と追加
-    for image_id in image_ids {
+    for image_id in &image_ids {
         // 画像の存在確認
-        let image_exists: bool = conn
+        let image_exists: bool = tx
             .query_row(
                 "SELECT 1 FROM images WHERE id = ?",
                 rusqlite::params![image_id],
@@ -530,12 +534,16 @@ pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), Str
 
         // UNIQUE制約により重複挿入は無視される（INSERT OR IGNORE）
         // ただし、その他のエラー（DB接続エラー等）は検出する
-        conn.execute(
+        tx.execute(
             "INSERT OR IGNORE INTO image_groups (image_id, group_id) VALUES (?, ?)",
             rusqlite::params![image_id, group_id],
         )
         .map_err(|e| format!("Failed to add image {} to group: {}", image_id, e))?;
     }
+
+    // トランザクションをコミット
+    tx.commit()
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
     Ok(())
 }
@@ -547,17 +555,30 @@ pub fn add_images_to_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), Str
 pub fn remove_images_from_group(image_ids: Vec<i64>, group_id: i64) -> Result<(), String> {
     use rusqlite::Connection;
 
+    // 空の配列のチェック
+    if image_ids.is_empty() {
+        return Ok(());
+    }
+
     let db_path = crate::db::get_db_path()?;
-    let conn = Connection::open(&db_path)
+    let mut conn = Connection::open(&db_path)
         .map_err(|e| format!("Failed to connect to database: {}", e))?;
 
-    for image_id in image_ids {
-        conn.execute(
+    // トランザクション開始（複数の書き込み操作を原子的に実行）
+    let tx = conn.transaction()
+        .map_err(|e| format!("Failed to start transaction: {}", e))?;
+
+    for image_id in &image_ids {
+        tx.execute(
             "DELETE FROM image_groups WHERE image_id = ? AND group_id = ?",
             rusqlite::params![image_id, group_id],
         )
         .map_err(|e| format!("Failed to remove image from group: {}", e))?;
     }
+
+    // トランザクションをコミット
+    tx.commit()
+        .map_err(|e| format!("Failed to commit transaction: {}", e))?;
 
     Ok(())
 }
