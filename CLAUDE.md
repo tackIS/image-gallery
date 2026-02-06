@@ -30,10 +30,6 @@
 ```
 image-gallery/                     # リポジトリルート
 ├── doc/                          # 設計ドキュメント
-│   ├── 01_requirement.md          # 要件定義
-│   ├── 02_mp4-support-plan.md     # Phase 1 実装プラン
-│   ├── 03_phase2-proposal.md      # Phase 2 提案
-│   └── 04_phase3-video-enhancement.md # Phase 3 実装プラン（動画機能強化）
 ├── src/                          # Reactフロントエンド
 │   ├── components/               # UIコンポーネント
 │   │   ├── Header.tsx            # ヘッダー（ディレクトリ選択、統計）
@@ -231,17 +227,20 @@ const { images, setImages, selectedImageId, setSelectedImageId } = useImageStore
 ### 1. 新機能開発の流れ
 
 ```bash
-# 1. mainブランチから最新を取得
+# 1. Issueを作成（gh issue create）
+gh issue create --title "新機能: 説明" --body "詳細"
+
+# 2. mainブランチから最新を取得
 git checkout main
 git pull
 
-# 2. featureブランチを作成
+# 3. featureブランチを作成
 git checkout -b feature/new-feature-name
 
-# 3. 開発
+# 4. 開発
 npm run dev  # または npm run tauri:dev
 
-# 4. コミット
+# 5. コミット
 git add .
 git commit -m "feat: 新機能の説明
 
@@ -249,7 +248,7 @@ git commit -m "feat: 新機能の説明
 
 Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
 
-# 5. プッシュ & PR作成
+# 6. プッシュ & PR作成
 git push -u origin feature/new-feature-name
 gh pr create --title "タイトル" --body "説明" --base main
 ```
@@ -367,10 +366,6 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 
 ### プロジェクト内ドキュメント
 - [README.md](./README.md) - プロジェクト概要
-- [doc/01_requirement.md](./doc/01_requirement.md) - 要件定義
-- [doc/02_mp4-support-plan.md](./doc/02_mp4-support-plan.md) - Phase 1プラン
-- [doc/03_phase2-proposal.md](./doc/03_phase2-proposal.md) - Phase 2提案
-- [doc/04_phase3-video-enhancement.md](./doc/04_phase3-video-enhancement.md) - Phase 3プラン（動画機能強化）
 
 ## Claude Codeとの協働のコツ
 
@@ -402,17 +397,3 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
 ```bash
 gh issue create --title "機能: XXXを追加" --body "詳細な説明"
 ```
-
-## 更新履歴
-
-- 2026-01-25: Phase 3実装完了
-  - ffmpeg統合（動画メタデータ抽出、サムネイル生成）
-  - WebM/MOV対応追加
-  - Migration v4追加（動画メタデータカラム）
-  - video_utils.rsモジュール追加
-  - プロジェクト構造とデータベーススキーマ更新
-- 2026-01-20: 初版作成
-  - プロジェクト概要
-  - Tailwind CSS v4の注意点
-  - 開発ワークフロー
-  - トラブルシューティング
