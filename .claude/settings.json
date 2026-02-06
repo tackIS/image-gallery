@@ -1,0 +1,59 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm run tauri:dev:*)",
+      "Bash(npm run tauri:build:*)",
+      "Bash(npm run preview:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx eslint:*)",
+      "Bash(cargo check:*)",
+      "Bash(cargo build:*)",
+      "Bash(cargo clippy:*)",
+      "Bash(cargo clean:*)",
+      "Bash(npm install)",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git pull:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash:*)",
+      "Bash(git mv:*)",
+      "Bash(git rm:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh issue edit:*)",
+      "Bash(gh issue close:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh label list:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)",
+      "Bash(wc:*)",
+      "Bash(sqlite3:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(lsof:*)",
+      "Bash(pkill:*)",
+      "WebSearch",
+      "mcp__playwright__browser_navigate"
+    ]
+  },
+  "hooks": {
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "osascript -e 'display notification \"Claude Codeが入力を待っています\" with title \"Claude Code\"'"
+          }
+        ]
+      }
+    ]
+  }
+}
