@@ -42,6 +42,8 @@ export interface ImageData {
   audio_codec: string | null;
   /** サムネイル画像のパス - 動画のみ */
   thumbnail_path: string | null;
+  /** 所属ディレクトリID */
+  directory_id: number | null;
 }
 
 /**
@@ -70,6 +72,52 @@ export interface DirectoryInfo {
   /** ディレクトリ内の画像ファイル数 */
   imageCount: number;
 }
+
+// ============================================================
+// Phase 6: マルチディレクトリ & Undo/Redo
+// ============================================================
+
+/**
+ * ディレクトリ管理情報を表す型
+ */
+export type DirectoryData = {
+  /** ディレクトリID */
+  id: number;
+  /** ディレクトリの絶対パス */
+  path: string;
+  /** ディレクトリ名 */
+  name: string;
+  /** アクティブかどうか（1: true, 0: false） */
+  is_active: number;
+  /** 最終スキャン日時 */
+  last_scanned_at: string | null;
+  /** ファイル数 */
+  file_count: number;
+  /** 作成日時 */
+  created_at: string;
+};
+
+/**
+ * アクションログエントリ（Undo/Redo用）
+ */
+export type ActionLogEntry = {
+  /** エントリID */
+  id: number;
+  /** アクション種別 */
+  action_type: string;
+  /** 対象テーブル */
+  target_table: string;
+  /** 対象ID */
+  target_id: number;
+  /** 変更前の値（JSON） */
+  old_value: string | null;
+  /** 変更後の値（JSON） */
+  new_value: string | null;
+  /** 作成日時 */
+  created_at: string;
+  /** Undo済みかどうか */
+  is_undone: number;
+};
 
 // ============================================================
 // Phase 4: グループ管理機能

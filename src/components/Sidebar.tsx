@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Images, Plus } from 'lucide-react';
+import { Images, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import {
   createGroup,
@@ -10,17 +10,13 @@ import {
 } from '../utils/tauri-commands';
 import GroupItem from './GroupItem';
 import GroupModal from './GroupModal';
+import DirectoryManager from './directory/DirectoryManager';
 import type { GroupData, CreateGroupInput, UpdateGroupInput } from '../types/image';
 
-interface SidebarProps {
-  /** サイドバーが開いているかどうか */
+type SidebarProps = {
   isOpen: boolean;
-}
+};
 
-/**
- * サイドバーコンポーネント
- * グループ一覧とフィルタリングを管理します
- */
 export default function Sidebar({ isOpen }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,13 +29,14 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     setGroupFilteredImageIds,
     showToast,
     resetAllModes,
+    isSidebarCollapsed,
+    toggleSidebarCollapsed,
   } = useImageStore();
 
   const [showModal, setShowModal] = useState(false);
   const [editingGroup, setEditingGroup] = useState<GroupData | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // 現在のパスからグループIDを抽出
   const isOnGroupPage = location.pathname.startsWith('/group/');
   const currentGroupId = isOnGroupPage
     ? parseInt(location.pathname.split('/').pop() || '', 10)
@@ -47,16 +44,12 @@ export default function Sidebar({ isOpen }: SidebarProps) {
 
   const handleCreateGroup = async (input: CreateGroupInput | UpdateGroupInput) => {
     if ('id' in input) {
-      // 編集モード
       await updateGroup(input);
-      const updatedGroups = await getAllGroups();
-      setGroups(updatedGroups);
     } else {
-      // 作成モード
       await createGroup(input);
-      const updatedGroups = await getAllGroups();
-      setGroups(updatedGroups);
     }
+    const updatedGroups = await getAllGroups();
+    setGroups(updatedGroups);
   };
 
   const handleEditGroup = (group: GroupData) => {
@@ -72,12 +65,9 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     try {
       setIsDeleting(true);
       await deleteGroup(groupId);
-
-      // 削除後に全グループを再取得して状態を更新
       const updatedGroups = await getAllGroups();
       setGroups(updatedGroups);
 
-      // 削除したグループが選択されていた場合、選択を解除してフィルターをクリア
       if (selectedGroupId === groupId) {
         setSelectedGroupId(null);
         setGroupFilteredImageIds([]);
@@ -98,7 +88,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   };
 
   const handleSelectAllImages = () => {
-    // ページ遷移前にすべてのモード状態をクリア
     resetAllModes();
     navigate('/');
     setSelectedGroupId(null);
@@ -106,9 +95,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   };
 
   const handleSelectGroup = (groupId: number) => {
-    // ページ遷移前にすべてのモード状態をクリア
     resetAllModes();
-    // グループアルバムビューに遷移
     navigate(`/group/${groupId}`);
   };
 
@@ -116,62 +103,118 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     return null;
   }
 
+  const collapsed = isSidebarCollapsed;
+
   return (
     <>
-      <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full">
-        {/* ヘッダー */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-3">
+      <aside
+        className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full transition-all duration-[--transition-slow] ${
+          collapsed ? 'w-16' : 'w-64'
+        }`}
+      >
+        {/* Collapse toggle */}
+        <div className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'justify-center p-2' : 'justify-between p-4'}`}>
+          {!collapsed && (
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Groups</h2>
+          )}
+          <button
+            onClick={toggleSidebarCollapsed}
+            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors text-gray-500 dark:text-gray-400"
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className={`border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'p-2' : 'px-4 py-3'}`}>
+          {/* All Images button */}
+          <button
+            onClick={handleSelectAllImages}
+            className={`w-full flex items-center rounded-lg transition-colors ${
+              !isOnGroupPage
+                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+            } ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`}
+            title="All Images"
+          >
+            <Images size={18} />
+            {!collapsed && <span className="text-sm font-medium">All Images</span>}
+          </button>
+
+          {/* Create group button */}
+          {!collapsed ? (
             <button
               onClick={() => setShowModal(true)}
-              className="p-1.5 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              className="w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+              aria-label="Create new group"
+              title="Create new group"
+            >
+              <Plus size={18} />
+              <span className="text-sm">New Group</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full flex justify-center p-2 mt-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
               aria-label="Create new group"
               title="Create new group"
             >
               <Plus size={18} />
             </button>
-          </div>
-
-          {/* All Images ボタン */}
-          <button
-            onClick={handleSelectAllImages}
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-              !isOnGroupPage
-                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            }`}
-          >
-            <Images size={18} />
-            <span className="text-sm font-medium">All Images</span>
-          </button>
+          )}
         </div>
 
-        {/* グループリスト */}
+        {/* Directories section */}
+        <div className={`border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'p-2' : 'py-2'}`}>
+          <DirectoryManager collapsed={collapsed} />
+        </div>
+
+        {/* Group list */}
         <div className="flex-1 overflow-y-auto p-2">
           {groups.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-              <p>No groups yet</p>
-              <p className="mt-1">Click + to create one</p>
-            </div>
+            !collapsed && (
+              <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                <p>No groups yet</p>
+                <p className="mt-1">Click + to create one</p>
+              </div>
+            )
           ) : (
             <div className="space-y-1">
               {groups.map((group) => (
-                <GroupItem
-                  key={group.id}
-                  group={group}
-                  isSelected={currentGroupId === group.id}
-                  onClick={() => handleSelectGroup(group.id)}
-                  onEdit={() => handleEditGroup(group)}
-                  onDelete={() => handleDeleteGroup(group.id)}
-                />
+                collapsed ? (
+                  <button
+                    key={group.id}
+                    onClick={() => handleSelectGroup(group.id)}
+                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                      currentGroupId === group.id
+                        ? 'bg-blue-100 dark:bg-blue-900'
+                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    title={`${group.name} (${group.image_count})`}
+                  >
+                    <div
+                      className="w-5 h-5 rounded-full shrink-0"
+                      style={{ backgroundColor: group.color }}
+                    />
+                  </button>
+                ) : (
+                  <GroupItem
+                    key={group.id}
+                    group={group}
+                    isSelected={currentGroupId === group.id}
+                    onClick={() => handleSelectGroup(group.id)}
+                    onEdit={() => handleEditGroup(group)}
+                    onDelete={() => handleDeleteGroup(group.id)}
+                  />
+                )
               ))}
             </div>
           )}
         </div>
       </aside>
 
-      {/* グループ作成/編集モーダル */}
       {showModal && (
         <GroupModal
           group={editingGroup}
@@ -180,7 +223,6 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         />
       )}
 
-      {/* 削除中のローディング */}
       {isDeleting && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-xl">

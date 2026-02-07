@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { X, Database, AlertTriangle } from 'lucide-react';
 import { backupDatabase, resetDatabase } from '../utils/tauri-commands';
 import { useImageStore } from '../store/imageStore';
+import ExportSection from './settings/ExportSection';
+import ImportSection from './settings/ImportSection';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -9,7 +11,7 @@ interface SettingsModalProps {
 
 /**
  * 設定モーダルコンポーネント
- * データベース管理機能を提供します
+ * データベース管理機能、エクスポート/インポート機能を提供します
  */
 export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [isResetting, setIsResetting] = useState(false);
@@ -80,29 +82,38 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
         </div>
 
         {/* コンテンツ */}
-        <div className="p-6">
+        <div className="p-6 space-y-6">
+          {/* メッセージ表示 */}
+          {message && (
+            <div
+              className={`p-3 rounded ${
+                message.type === 'success'
+                  ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                  : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
+          {/* エクスポートセクション */}
+          <ExportSection onMessage={setMessage} />
+
+          <hr className="border-gray-200 dark:border-gray-700" />
+
+          {/* インポートセクション */}
+          <ImportSection onMessage={setMessage} />
+
+          <hr className="border-gray-200 dark:border-gray-700" />
+
           {/* データベース管理セクション */}
-          <div className="mb-6">
+          <div>
             <div className="flex items-center gap-2 mb-4">
               <Database size={20} className="text-gray-700 dark:text-gray-300" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">データベース管理</h3>
             </div>
 
-            {/* メッセージ表示 */}
-            {message && (
-              <div
-                className={`mb-4 p-3 rounded ${
-                  message.type === 'success'
-                    ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                    : 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200'
-                }`}
-              >
-                {message.text}
-              </div>
-            )}
-
             {!showConfirm ? (
-              /* 初期表示 */
               <div className="space-y-4">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   データベースをリセットすると、すべてのメタデータ（コメント、タグ、評価）が失われます。
@@ -117,7 +128,6 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
                 </button>
               </div>
             ) : (
-              /* 確認ダイアログ */
               <div className="space-y-4">
                 <div className="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded">
                   <AlertTriangle className="text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" size={20} />

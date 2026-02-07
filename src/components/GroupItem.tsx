@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Folder, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { convertFileSrc } from '@tauri-apps/api/core';
+import { useDroppable } from '@dnd-kit/core';
 import { useImageStore } from '../store/imageStore';
 import type { GroupData } from '../types/image';
 
@@ -29,6 +30,9 @@ export default function GroupItem({
   onDelete,
 }: GroupItemProps) {
   const { images } = useImageStore();
+  const { isOver, setNodeRef: setDropRef } = useDroppable({
+    id: `group-${group.id}`,
+  });
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
@@ -84,12 +88,13 @@ export default function GroupItem({
 
   return (
     <div
+      ref={setDropRef}
       onClick={onClick}
       className={`group relative flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
         isSelected
           ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
           : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-      }`}
+      } ${isOver ? 'ring-2 ring-blue-400 bg-blue-50 dark:bg-blue-900/50' : ''}`}
     >
       {/* 代表画像サムネイルまたはアイコン */}
       {representativeImage ? (

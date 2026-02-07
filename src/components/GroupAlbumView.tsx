@@ -1,10 +1,10 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
 import { getGroupById, getGroupImages, setRepresentativeImage } from '../utils/tauri-commands';
 import type { GroupData } from '../types/image';
 import AlbumHeader from './AlbumHeader';
+import Breadcrumb from './Breadcrumb';
 import ImageGrid from './ImageGrid';
 import ImageDetail from './ImageDetail';
 import LoadingSpinner from './LoadingSpinner';
@@ -29,6 +29,11 @@ function GroupAlbumView() {
   const [group, setGroup] = useState<GroupData | null>(null);
   const [groupImageIds, setGroupImageIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ページ遷移時にモード状態をクリア
+  useEffect(() => {
+    return () => { resetAllModes(); };
+  }, [resetAllModes]);
 
   // 代表画像をuseMemoで計算（パフォーマンス最適化）
   // allImages全体の変更ではなく、代表画像IDが変更された時のみ実質的に更新される
@@ -153,19 +158,14 @@ function GroupAlbumView() {
 
   return (
     <div className="h-screen bg-gray-50 dark:bg-gray-900 transition-colors flex flex-col overflow-hidden">
-      {/* ヘッダーナビゲーション */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
-        <button
-          onClick={() => {
-            // ページ遷移前にすべてのモード状態をクリア
-            resetAllModes();
-            navigate('/');
-          }}
-          className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
-        >
-          <ArrowLeft size={20} />
-          <span>Back to All Images</span>
-        </button>
+      {/* ブレッドクラムナビゲーション */}
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-3">
+        <Breadcrumb
+          items={[
+            { label: 'Gallery', path: '/' },
+            { label: group.name },
+          ]}
+        />
       </div>
 
       {/* スクロール可能なコンテンツエリア */}
