@@ -1,28 +1,17 @@
 import { useImageStore } from '../store/imageStore';
-import MediaCard from './MediaCard';
+import VirtualGrid from './grid/VirtualGrid';
+import VirtualList from './grid/VirtualList';
 import type { ImageData } from '../types/image';
 
 type ImageGridProps = {
-  /** カスタム画像クリックハンドラー（代表画像選択モード用） */
   onImageClick?: (imageId: number) => void;
-  /** 表示する画像リスト（指定しない場合はstoreから取得） */
   images?: ImageData[];
 };
 
-/**
- * メディアグリッド表示コンポーネント
- *
- * データベースに登録された画像・動画をレスポンシブなグリッドレイアウトで表示します。
- * 遅延読み込み（lazy loading）を使用してパフォーマンスを最適化します。
- */
 export default function ImageGrid({ onImageClick, images: propsImages }: ImageGridProps) {
-  const { images: storeImages, setSelectedImageId, getSortedImages, selectedGroupId, groups } = useImageStore();
+  const { images: storeImages, getSortedImages, selectedGroupId, groups, viewMode } = useImageStore();
 
-  // propsで画像が渡された場合はそれを使用、なければstoreから取得
-  // ?? 演算子を使うことで、propsImagesがnull/undefinedの場合のみ代替値を使用
   const displayImages = propsImages ?? getSortedImages();
-
-  // 空チェック用（propsImagesまたはstoreImagesを使用）
   const allImages = propsImages ?? storeImages;
 
   if (allImages.length === 0) {
@@ -34,7 +23,6 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
   }
 
   if (displayImages.length === 0) {
-    // グループフィルター時のメッセージ
     if (selectedGroupId !== null) {
       const selectedGroup = groups.find((g) => g.id === selectedGroupId);
       return (
@@ -49,7 +37,6 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
       );
     }
 
-    // 通常のフィルター時のメッセージ
     return (
       <div className="flex items-center justify-center py-24">
         <p className="text-gray-500 dark:text-gray-400">No images match the current filters</p>
@@ -57,24 +44,9 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
     );
   }
 
-  const handleImageClick = (imageId: number) => {
-    if (onImageClick) {
-      onImageClick(imageId);
-    } else {
-      setSelectedImageId(imageId);
-    }
-  };
+  if (viewMode === 'list') {
+    return <VirtualList images={displayImages} onImageClick={onImageClick} />;
+  }
 
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 p-4">
-      {displayImages.map((media) => (
-        <MediaCard
-          key={media.id}
-          media={media}
-          onClick={() => handleImageClick(media.id)}
-          forceClick={!!onImageClick}
-        />
-      ))}
-    </div>
-  );
+  return <VirtualGrid images={displayImages} onImageClick={onImageClick} />;
 }

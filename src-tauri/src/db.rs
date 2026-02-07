@@ -145,6 +145,43 @@ pub fn get_migrations() -> Vec<Migration> {
                 CREATE INDEX IF NOT EXISTS idx_group_comments_created_at ON group_comments(created_at);
             ",
             kind: MigrationKind::Up,
+        },
+        Migration {
+            version: 7,
+            description: "add_directories_and_action_log_tables",
+            sql: "
+                -- ディレクトリ管理テーブル
+                CREATE TABLE IF NOT EXISTS directories (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    path TEXT NOT NULL UNIQUE,
+                    name TEXT NOT NULL,
+                    is_active INTEGER DEFAULT 1,
+                    last_scanned_at TEXT,
+                    file_count INTEGER DEFAULT 0,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_directories_path ON directories(path);
+                CREATE INDEX IF NOT EXISTS idx_directories_is_active ON directories(is_active);
+
+                -- imagesにdirectory_id追加
+                ALTER TABLE images ADD COLUMN directory_id INTEGER REFERENCES directories(id) ON DELETE SET NULL;
+                CREATE INDEX IF NOT EXISTS idx_images_directory_id ON images(directory_id);
+
+                -- Undo/Redo用アクションログ
+                CREATE TABLE IF NOT EXISTS action_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    action_type TEXT NOT NULL,
+                    target_table TEXT NOT NULL,
+                    target_id INTEGER NOT NULL,
+                    old_value TEXT,
+                    new_value TEXT,
+                    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                    is_undone INTEGER DEFAULT 0
+                );
+                CREATE INDEX IF NOT EXISTS idx_action_log_created_at ON action_log(created_at);
+                CREATE INDEX IF NOT EXISTS idx_action_log_is_undone ON action_log(is_undone);
+            ",
+            kind: MigrationKind::Up,
         }
     ]
 }
@@ -230,6 +267,37 @@ pub async fn init_db() -> Result<(), String> {
         CREATE INDEX IF NOT EXISTS idx_group_comments_group ON group_comments(group_id);
         CREATE INDEX IF NOT EXISTS idx_group_comments_created_at ON group_comments(created_at);
     ").map_err(|e| format!("Failed to create group_comments table: {}", e))?;
+
+    // Migration 7: directories, action_log テーブル + images.directory_id
+    conn.execute_batch("
+        CREATE TABLE IF NOT EXISTS directories (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL UNIQUE,
+            name TEXT NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            last_scanned_at TEXT,
+            file_count INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE INDEX IF NOT EXISTS idx_directories_path ON directories(path);
+        CREATE INDEX IF NOT EXISTS idx_directories_is_active ON directories(is_active);
+
+        CREATE TABLE IF NOT EXISTS action_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action_type TEXT NOT NULL,
+            target_table TEXT NOT NULL,
+            target_id INTEGER NOT NULL,
+            old_value TEXT,
+            new_value TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            is_undone INTEGER DEFAULT 0
+        );
+        CREATE INDEX IF NOT EXISTS idx_action_log_created_at ON action_log(created_at);
+        CREATE INDEX IF NOT EXISTS idx_action_log_is_undone ON action_log(is_undone);
+    ").map_err(|e| format!("Failed to create directories/action_log tables: {}", e))?;
+
+    let _ = conn.execute("ALTER TABLE images ADD COLUMN directory_id INTEGER REFERENCES directories(id) ON DELETE SET NULL", []);
+    let _ = conn.execute("CREATE INDEX IF NOT EXISTS idx_images_directory_id ON images(directory_id)", []);
 
     println!("Database initialization completed");
     Ok(())

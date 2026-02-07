@@ -13,6 +13,16 @@ export type SortBy = 'name' | 'created_at' | 'rating';
 export type SortOrder = 'asc' | 'desc';
 
 /**
+ * 表示モードの型
+ */
+export type ViewMode = 'grid' | 'list';
+
+/**
+ * グリッド密度の型
+ */
+export type GridDensity = 'compact' | 'normal' | 'comfortable';
+
+/**
  * タグフィルターモードの型
  */
 export type TagFilterMode = 'any' | 'all';
@@ -79,6 +89,14 @@ interface ImageStore {
   /** スライドショーの再生間隔（秒） */
   slideshowInterval: SlideshowInterval;
 
+  // Phase 6: 表示モード
+  /** 表示モード（グリッド/リスト） */
+  viewMode: ViewMode;
+  /** グリッド密度 */
+  gridDensity: GridDensity;
+  /** サイドバーが折りたたまれているかどうか */
+  isSidebarCollapsed: boolean;
+
   // Phase 4: グループ管理
   /** 読み込まれたグループの配列 */
   groups: GroupData[];
@@ -144,6 +162,14 @@ interface ImageStore {
   /** スライドショーの再生間隔を設定します */
   setSlideshowInterval: (interval: SlideshowInterval) => void;
 
+  // Phase 6: 表示モードアクション
+  /** 表示モードを設定します */
+  setViewMode: (mode: ViewMode) => void;
+  /** グリッド密度を設定します */
+  setGridDensity: (density: GridDensity) => void;
+  /** サイドバーの折りたたみ状態を切り替えます */
+  toggleSidebarCollapsed: () => void;
+
   // Phase 4: グループ関連アクション
   /** グループの配列を設定します */
   setGroups: (groups: GroupData[]) => void;
@@ -203,6 +229,11 @@ export const useImageStore = create<ImageStore>()(
       searchQuery: '',
       isSlideshowActive: false,
       slideshowInterval: 5,
+
+      // Phase 6: 表示モード
+      viewMode: 'grid',
+      gridDensity: 'normal',
+      isSidebarCollapsed: false,
 
       // Phase 4: グループ管理
       groups: [],
@@ -267,7 +298,7 @@ export const useImageStore = create<ImageStore>()(
         const { images, sortBy, sortOrder, filterSettings, searchQuery, selectedGroupId, groupFilteredImageIds } = get();
 
         // フィルタリング
-        let filtered = images.filter((img) => {
+        const filtered = images.filter((img) => {
           // グループフィルター（selectedGroupIdがnullでない場合）
           if (selectedGroupId !== null && !groupFilteredImageIds.includes(img.id)) {
             return false;
@@ -349,6 +380,11 @@ export const useImageStore = create<ImageStore>()(
       stopSlideshow: () => set({ isSlideshowActive: false }),
       toggleSlideshow: () => set((state) => ({ isSlideshowActive: !state.isSlideshowActive })),
       setSlideshowInterval: (interval) => set({ slideshowInterval: interval }),
+
+      // Phase 6: 表示モードアクション
+      setViewMode: (mode) => set({ viewMode: mode }),
+      setGridDensity: (density) => set({ gridDensity: density }),
+      toggleSidebarCollapsed: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
 
       // Phase 4: グループ関連アクション
       setGroups: (groups) => set({ groups }),
@@ -441,7 +477,9 @@ export const useImageStore = create<ImageStore>()(
         sortOrder: state.sortOrder,
         filterSettings: state.filterSettings,
         slideshowInterval: state.slideshowInterval,
-        // selectedGroupIdは永続化しない（起動時は常に"All Images"表示）
+        viewMode: state.viewMode,
+        gridDensity: state.gridDensity,
+        isSidebarCollapsed: state.isSidebarCollapsed,
       }),
     }
   )

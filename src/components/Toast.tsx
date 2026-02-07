@@ -40,7 +40,7 @@ export default function Toast() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg animate-in slide-in-from-top-5 ${getStyles(
+          className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg animate-slide-in-top ${getStyles(
             toast.type
           )}`}
         >

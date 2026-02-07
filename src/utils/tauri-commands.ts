@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import Database from '@tauri-apps/plugin-sql';
-import type { ImageData, ImageMetadataUpdate, GroupData, CreateGroupInput, UpdateGroupInput, GroupComment, AddCommentInput } from '../types/image';
+import type { ImageData, ImageMetadataUpdate, GroupData, CreateGroupInput, UpdateGroupInput, GroupComment, AddCommentInput, DirectoryData, ActionLogEntry } from '../types/image';
 
 /**
  * ファイルシステムからスキャンされたメディアファイル情報
@@ -88,6 +88,31 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
   const db = await getDatabase();
 
   try {
+    // ディレクトリレコードが存在するか確認、なければ自動作成
+    let dirResult = await db.select<{ id: number }[]>(
+      'SELECT id FROM directories WHERE path = $1',
+      [path]
+    );
+
+    let directoryId: number | null = null;
+    if (dirResult.length > 0) {
+      directoryId = dirResult[0].id;
+    } else {
+      // ディレクトリ名を抽出
+      const dirName = path.split('/').filter(Boolean).pop() || path;
+      await db.execute(
+        'INSERT INTO directories (path, name) VALUES ($1, $2)',
+        [path, dirName]
+      );
+      dirResult = await db.select<{ id: number }[]>(
+        'SELECT id FROM directories WHERE path = $1',
+        [path]
+      );
+      if (dirResult.length > 0) {
+        directoryId = dirResult[0].id;
+      }
+    }
+
     // データベースにファイルを挿入
     for (const fileInfo of fileInfos) {
       // 既に存在するかチェック
@@ -97,9 +122,8 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
       );
 
       if (existing[0].count === 0) {
-        // 存在しない場合は挿入（file_typeとメタデータはバックエンドで判定済み）
         await db.execute(
-          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
           [
             fileInfo.file_path,
             fileInfo.file_name,
@@ -109,9 +133,24 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
             fileInfo.height ?? null,
             fileInfo.video_codec ?? null,
             fileInfo.audio_codec ?? null,
+            directoryId,
           ]
         );
+      } else if (directoryId !== null) {
+        // 既存画像のdirectory_idを更新（NULLの場合のみ）
+        await db.execute(
+          'UPDATE images SET directory_id = $1 WHERE file_path = $2 AND directory_id IS NULL',
+          [directoryId, fileInfo.file_path]
+        );
       }
+    }
+
+    // ディレクトリのファイル数とスキャン日時を更新
+    if (directoryId !== null) {
+      await db.execute(
+        'UPDATE directories SET file_count = (SELECT COUNT(*) FROM images WHERE directory_id = $1), last_scanned_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [directoryId]
+      );
     }
 
     // すべてのメディアファイルを取得して返す
@@ -146,8 +185,9 @@ export async function getAllImages(): Promise<ImageData[]> {
       video_codec: string | null;
       audio_codec: string | null;
       thumbnail_path: string | null;
+      directory_id: number | null;
     }>>(
-      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path FROM images ORDER BY created_at DESC'
+      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path, directory_id FROM images ORDER BY created_at DESC'
     );
 
     // tagsをJSON文字列から配列にパース
@@ -175,6 +215,7 @@ export async function getAllImages(): Promise<ImageData[]> {
       video_codec: row.video_codec,
       audio_codec: row.audio_codec,
       thumbnail_path: row.thumbnail_path,
+      directory_id: row.directory_id,
     }));
   } finally {
     await db.close();
@@ -388,4 +429,238 @@ export async function getGroupComments(groupId: number): Promise<GroupComment[]>
  */
 export async function deleteGroupComment(commentId: number): Promise<void> {
   return await invoke<void>('delete_group_comment', { commentId });
+}
+
+// ============================================================
+// Phase 6: マルチディレクトリ管理API
+// ============================================================
+
+/**
+ * ディレクトリを追加し、初回スキャンを実行します
+ * @param path ディレクトリの絶対パス
+ * @returns 追加されたディレクトリ情報
+ */
+export async function addDirectory(path: string): Promise<DirectoryData> {
+  return await invoke<DirectoryData>('add_directory', { path });
+}
+
+/**
+ * ディレクトリを削除します（画像データは保持）
+ * @param directoryId ディレクトリID
+ */
+export async function removeDirectory(directoryId: number): Promise<void> {
+  return await invoke<void>('remove_directory', { directoryId });
+}
+
+/**
+ * 全ディレクトリを取得します
+ * @returns ディレクトリデータの配列
+ */
+export async function getAllDirectories(): Promise<DirectoryData[]> {
+  return await invoke<DirectoryData[]>('get_all_directories');
+}
+
+/**
+ * ディレクトリのアクティブ状態を設定します
+ * @param directoryId ディレクトリID
+ * @param isActive アクティブにするかどうか
+ */
+export async function setDirectoryActive(directoryId: number, isActive: boolean): Promise<void> {
+  return await invoke<void>('set_directory_active', { directoryId, isActive });
+}
+
+/**
+ * 指定ディレクトリを再スキャンしてDBに登録します
+ * @param directoryId ディレクトリID
+ * @returns スキャンされたファイル情報
+ */
+export async function scanSingleDirectory(directoryId: number): Promise<ImageData[]> {
+  const fileInfos = await invoke<ImageFileInfo[]>('scan_single_directory', { directoryId });
+  const db = await getDatabase();
+
+  try {
+    for (const fileInfo of fileInfos) {
+      const existing = await db.select<{ count: number }[]>(
+        'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
+        [fileInfo.file_path]
+      );
+
+      if (existing[0].count === 0) {
+        await db.execute(
+          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT id FROM directories WHERE path = (SELECT path FROM directories WHERE id = $9)))',
+          [
+            fileInfo.file_path,
+            fileInfo.file_name,
+            fileInfo.file_type,
+            fileInfo.duration_seconds ?? null,
+            fileInfo.width ?? null,
+            fileInfo.height ?? null,
+            fileInfo.video_codec ?? null,
+            fileInfo.audio_codec ?? null,
+            directoryId,
+          ]
+        );
+      }
+    }
+
+    return await getAllImages();
+  } finally {
+    await db.close();
+  }
+}
+
+/**
+ * 全アクティブディレクトリをスキャンしてDBに登録します
+ * @returns 全画像データ
+ */
+export async function scanAllActiveDirectories(): Promise<ImageData[]> {
+  const fileInfos = await invoke<ImageFileInfo[]>('scan_all_active_directories');
+  const db = await getDatabase();
+
+  try {
+    for (const fileInfo of fileInfos) {
+      const existing = await db.select<{ count: number }[]>(
+        'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
+        [fileInfo.file_path]
+      );
+
+      if (existing[0].count === 0) {
+        await db.execute(
+          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+          [
+            fileInfo.file_path,
+            fileInfo.file_name,
+            fileInfo.file_type,
+            fileInfo.duration_seconds ?? null,
+            fileInfo.width ?? null,
+            fileInfo.height ?? null,
+            fileInfo.video_codec ?? null,
+            fileInfo.audio_codec ?? null,
+          ]
+        );
+      }
+    }
+
+    return await getAllImages();
+  } finally {
+    await db.close();
+  }
+}
+
+/**
+ * ディレクトリ選択ダイアログを表示してディレクトリを追加します
+ * @returns 追加されたディレクトリ情報、またはキャンセル時null
+ */
+export async function selectAndAddDirectory(): Promise<DirectoryData | null> {
+  const path = await selectDirectory();
+  if (!path) return null;
+  return await addDirectory(path);
+}
+
+// ============================================================
+// Phase 6: Undo/Redo アクションログAPI
+// ============================================================
+
+/**
+ * アクションをログに記録します
+ */
+export async function logAction(
+  actionType: string,
+  targetTable: string,
+  targetId: number,
+  oldValue: string | null,
+  newValue: string | null,
+): Promise<number> {
+  return await invoke<number>('log_action', {
+    actionType,
+    targetTable,
+    targetId,
+    oldValue,
+    newValue,
+  });
+}
+
+/**
+ * 最新のundo可能なアクションを取得します
+ */
+export async function getLastUndoableAction(): Promise<ActionLogEntry | null> {
+  return await invoke<ActionLogEntry | null>('get_last_undoable_action');
+}
+
+/**
+ * 最新のredo可能なアクションを取得します
+ */
+export async function getLastRedoableAction(): Promise<ActionLogEntry | null> {
+  return await invoke<ActionLogEntry | null>('get_last_redoable_action');
+}
+
+/**
+ * アクションをundo済みとしてマークします
+ */
+export async function markActionUndone(actionId: number): Promise<void> {
+  return await invoke<void>('mark_action_undone', { actionId });
+}
+
+/**
+ * アクションをredo済みとしてマークします
+ */
+export async function markActionRedone(actionId: number): Promise<void> {
+  return await invoke<void>('mark_action_redone', { actionId });
+}
+
+// ============================================================
+// Phase 6: エクスポート/インポートAPI
+// ============================================================
+
+/**
+ * メタデータをJSON形式でエクスポートします
+ * @param outputPath 出力先ファイルパス
+ * @returns 出力ファイルパス
+ */
+export async function exportMetadataJson(outputPath: string): Promise<string> {
+  return await invoke<string>('export_metadata_json', { outputPath });
+}
+
+/**
+ * メタデータをCSV形式でエクスポートします
+ * @param outputPath 出力先ファイルパス
+ * @returns 出力ファイルパス
+ */
+export async function exportMetadataCsv(outputPath: string): Promise<string> {
+  return await invoke<string>('export_metadata_csv', { outputPath });
+}
+
+/**
+ * JSONファイルからメタデータをインポートします
+ * @param inputPath 入力ファイルパス
+ * @returns インポート結果サマリー
+ */
+export async function importMetadataJson(inputPath: string): Promise<string> {
+  return await invoke<string>('import_metadata_json', { inputPath });
+}
+
+// ============================================================
+// Phase 6: ファイルウォッチャーAPI
+// ============================================================
+
+/**
+ * ファイルウォッチャーを起動します
+ * @param paths 監視するディレクトリパスの配列
+ */
+export async function startFileWatcher(paths: string[]): Promise<void> {
+  return await invoke<void>('start_file_watcher', { paths });
+}
+
+/**
+ * ファイルウォッチャーを停止します
+ */
+export async function stopFileWatcher(): Promise<void> {
+  return await invoke<void>('stop_file_watcher');
+}
+
+/**
+ * 現在監視中のディレクトリパスを取得します
+ */
+export async function getWatchedDirectories(): Promise<string[]> {
+  return await invoke<string[]>('get_watched_directories');
 }
