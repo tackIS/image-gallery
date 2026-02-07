@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useImageStore } from '../store/imageStore';
-import { initializeDatabase, getDatabasePath, getAllGroups } from '../utils/tauri-commands';
+import { initializeDatabase, getDatabasePath, getAllGroups, getAllImages, getImagesByDirectoryId } from '../utils/tauri-commands';
 import { useDirectoryWatcher } from '../hooks/useDirectoryWatcher';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -19,6 +19,7 @@ function MainGallery() {
     currentDirectory,
     error,
     isLoading,
+    setImages,
     setError,
     setLoading,
     setGroups,
@@ -57,6 +58,16 @@ function MainGallery() {
         const groups = await getAllGroups();
         setGroups(groups);
         console.log(`Loaded ${groups.length} groups`);
+
+        // selectedDirectoryId に応じて画像をロード
+        const dirId = useImageStore.getState().selectedDirectoryId;
+        if (dirId !== null) {
+          const dirImages = await getImagesByDirectoryId(dirId);
+          setImages(dirImages);
+        } else {
+          const allImages = await getAllImages();
+          setImages(allImages);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         console.error('Database initialization error:', err);
@@ -65,7 +76,7 @@ function MainGallery() {
       }
     };
     init();
-  }, [setError, setLoading, setGroups]);
+  }, [setError, setLoading, setGroups, setImages]);
 
   // キーボードショートカット
   useEffect(() => {
@@ -137,9 +148,9 @@ function MainGallery() {
               </div>
             )}
 
-            {!isLoading && !currentDirectory && <EmptyState />}
+            {!isLoading && images.length === 0 && <EmptyState />}
 
-            {!isLoading && currentDirectory && images.length > 0 && <ImageGrid />}
+            {!isLoading && images.length > 0 && <ImageGrid />}
           </main>
         </div>
 

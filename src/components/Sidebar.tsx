@@ -7,6 +7,7 @@ import {
   getAllGroups,
   updateGroup,
   deleteGroup,
+  getAllImages,
 } from '../utils/tauri-commands';
 import GroupItem from './GroupItem';
 import GroupModal from './GroupModal';
@@ -24,9 +25,14 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const {
     groups,
     setGroups,
+    setImages,
     selectedGroupId,
     setSelectedGroupId,
     setGroupFilteredImageIds,
+    selectedDirectoryId,
+    setSelectedDirectoryId,
+    setCurrentDirectory,
+    setLoading,
     showToast,
     resetAllModes,
     isSidebarCollapsed,
@@ -41,6 +47,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   const currentGroupId = isOnGroupPage
     ? parseInt(location.pathname.split('/').pop() || '', 10)
     : null;
+
+  const isAllImagesActive = !isOnGroupPage && selectedDirectoryId === null;
 
   const handleCreateGroup = async (input: CreateGroupInput | UpdateGroupInput) => {
     if ('id' in input) {
@@ -87,11 +95,23 @@ export default function Sidebar({ isOpen }: SidebarProps) {
     setEditingGroup(null);
   };
 
-  const handleSelectAllImages = () => {
+  const handleSelectAllImages = async () => {
     resetAllModes();
     navigate('/');
     setSelectedGroupId(null);
     setGroupFilteredImageIds([]);
+    setSelectedDirectoryId(null);
+    try {
+      setLoading(true);
+      const allImages = await getAllImages();
+      setImages(allImages);
+      setCurrentDirectory(null);
+    } catch (err) {
+      console.error('Failed to load all images:', err);
+      showToast('Failed to load images', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSelectGroup = (groupId: number) => {
@@ -113,10 +133,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
         }`}
       >
         {/* Collapse toggle */}
-        <div className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'justify-center p-2' : 'justify-between p-4'}`}>
-          {!collapsed && (
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Groups</h2>
-          )}
+        <div className={`flex items-center border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'justify-center p-2' : 'justify-end p-2 px-4'}`}>
           <button
             onClick={toggleSidebarCollapsed}
             className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors text-gray-500 dark:text-gray-400"
@@ -127,91 +144,104 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           </button>
         </div>
 
-        {/* Actions */}
-        <div className={`border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'p-2' : 'px-4 py-3'}`}>
-          {/* All Images button */}
-          <button
-            onClick={handleSelectAllImages}
-            className={`w-full flex items-center rounded-lg transition-colors ${
-              !isOnGroupPage
-                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
-                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
-            } ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`}
-            title="All Images"
-          >
-            <Images size={18} />
-            {!collapsed && <span className="text-sm font-medium">All Images</span>}
-          </button>
-
-          {/* Create group button */}
-          {!collapsed ? (
-            <button
-              onClick={() => setShowModal(true)}
-              className="w-full flex items-center gap-3 px-3 py-2 mt-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
-              aria-label="Create new group"
-              title="Create new group"
-            >
-              <Plus size={18} />
-              <span className="text-sm">New Group</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowModal(true)}
-              className="w-full flex justify-center p-2 mt-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
-              aria-label="Create new group"
-              title="Create new group"
-            >
-              <Plus size={18} />
-            </button>
-          )}
-        </div>
-
-        {/* Directories section */}
+        {/* DIRECTORIES section */}
         <div className={`border-b border-gray-200 dark:border-gray-700 ${collapsed ? 'p-2' : 'py-2'}`}>
+          {!collapsed && (
+            <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Directories
+            </div>
+          )}
+
+          {/* All Images button */}
+          <div className={collapsed ? '' : 'px-1'}>
+            <button
+              onClick={handleSelectAllImages}
+              className={`w-full flex items-center rounded-lg transition-colors ${
+                isAllImagesActive
+                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+              } ${collapsed ? 'justify-center p-2' : 'gap-3 px-3 py-2'}`}
+              title="All Images"
+            >
+              <Images size={18} />
+              {!collapsed && <span className="text-sm font-medium">All Images</span>}
+            </button>
+          </div>
+
+          {/* Directory list */}
           <DirectoryManager collapsed={collapsed} />
         </div>
 
-        {/* Group list */}
-        <div className="flex-1 overflow-y-auto p-2">
-          {groups.length === 0 ? (
-            !collapsed && (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
-                <p>No groups yet</p>
-                <p className="mt-1">Click + to create one</p>
-              </div>
-            )
-          ) : (
-            <div className="space-y-1">
-              {groups.map((group) => (
-                collapsed ? (
-                  <button
-                    key={group.id}
-                    onClick={() => handleSelectGroup(group.id)}
-                    className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
-                      currentGroupId === group.id
-                        ? 'bg-blue-100 dark:bg-blue-900'
-                        : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                    }`}
-                    title={`${group.name} (${group.image_count})`}
-                  >
-                    <div
-                      className="w-5 h-5 rounded-full shrink-0"
-                      style={{ backgroundColor: group.color }}
-                    />
-                  </button>
-                ) : (
-                  <GroupItem
-                    key={group.id}
-                    group={group}
-                    isSelected={currentGroupId === group.id}
-                    onClick={() => handleSelectGroup(group.id)}
-                    onEdit={() => handleEditGroup(group)}
-                    onDelete={() => handleDeleteGroup(group.id)}
-                  />
-                )
-              ))}
+        {/* GROUPS section */}
+        <div className="flex-1 overflow-y-auto">
+          {!collapsed && (
+            <div className="px-3 py-1.5 mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+              Groups
             </div>
           )}
+
+          <div className="p-2">
+            {groups.length === 0 ? (
+              !collapsed && (
+                <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
+                  <p>No groups yet</p>
+                </div>
+              )
+            ) : (
+              <div className="space-y-1">
+                {groups.map((group) => (
+                  collapsed ? (
+                    <button
+                      key={group.id}
+                      onClick={() => handleSelectGroup(group.id)}
+                      className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
+                        currentGroupId === group.id
+                          ? 'bg-blue-100 dark:bg-blue-900'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                      title={`${group.name} (${group.image_count})`}
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full shrink-0"
+                        style={{ backgroundColor: group.color }}
+                      />
+                    </button>
+                  ) : (
+                    <GroupItem
+                      key={group.id}
+                      group={group}
+                      isSelected={currentGroupId === group.id}
+                      onClick={() => handleSelectGroup(group.id)}
+                      onEdit={() => handleEditGroup(group)}
+                      onDelete={() => handleDeleteGroup(group.id)}
+                    />
+                  )
+                ))}
+              </div>
+            )}
+
+            {/* Create group button */}
+            {!collapsed ? (
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full flex items-center gap-2 px-2 py-1.5 mt-1 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                aria-label="Create new group"
+                title="Create new group"
+              >
+                <Plus size={14} />
+                <span>New Group</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowModal(true)}
+                className="w-full flex justify-center p-2 mt-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-colors"
+                aria-label="Create new group"
+                title="Create new group"
+              >
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
         </div>
       </aside>
 

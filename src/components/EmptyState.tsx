@@ -10,7 +10,7 @@ export default function EmptyState() {
       <ImageOff size={64} className="mb-4" />
       <h2 className="text-xl font-semibold mb-2 text-gray-700 dark:text-gray-300">No Media Files Found</h2>
       <p className="text-sm">
-        Click "Select Directory" to load images and videos from a folder
+        Add a directory from the sidebar to start browsing images and videos
       </p>
     </div>
   );

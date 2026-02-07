@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FolderOpen, Settings, Sun, Moon, Menu, CheckSquare } from 'lucide-react';
+import { Settings, Sun, Moon, Menu, CheckSquare } from 'lucide-react';
 import { useImageStore } from '../store/imageStore';
-import { selectDirectory, scanDirectory, checkFFmpegAvailable } from '../utils/tauri-commands';
+import { checkFFmpegAvailable } from '../utils/tauri-commands';
 import SettingsModal from './SettingsModal';
 import { useTheme } from '../hooks/useTheme';
 import SearchBar from './header/SearchBar';
@@ -17,10 +17,6 @@ type HeaderProps = {
 export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) {
   const {
     images,
-    setImages,
-    setCurrentDirectory,
-    setLoading,
-    setError,
     filterSettings,
     getSortedAndFilteredImages,
     isSelectionMode,
@@ -45,24 +41,6 @@ export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) 
       .then((msg) => console.log('[FFmpeg]', msg))
       .catch((err) => console.warn('[FFmpeg] Not available:', err));
   }, []);
-
-  const handleSelectDirectory = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const path = await selectDirectory();
-      if (path) {
-        const images = await scanDirectory(path);
-        setImages(images);
-        setCurrentDirectory(path);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <>
@@ -139,13 +117,6 @@ export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) 
             title="Settings"
           >
             <Settings size={20} />
-          </button>
-          <button
-            onClick={handleSelectDirectory}
-            className="flex items-center gap-2 bg-blue-500 dark:bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors"
-          >
-            <FolderOpen size={20} />
-            <span className="hidden sm:inline">Add Dir</span>
           </button>
         </div>
       </header>
