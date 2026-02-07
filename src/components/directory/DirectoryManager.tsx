@@ -20,7 +20,7 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
   const [directories, setDirectories] = useState<DirectoryData[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
   const [selectedDirectoryId, setSelectedDirectoryId] = useState<number | null>(null);
-  const { setImages, setCurrentDirectory, showToast } = useImageStore();
+  const { setImages, setCurrentDirectory, currentDirectory, showToast } = useImageStore();
 
   const loadDirectories = useCallback(async () => {
     try {
@@ -31,6 +31,7 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     }
   }, []);
 
+  // マウント時とcurrentDirectory変更時にディレクトリ一覧をリロード
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -45,7 +46,7 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     };
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [currentDirectory]);
 
   const handleSelectDirectory = useCallback(async (dir: DirectoryData) => {
     try {
