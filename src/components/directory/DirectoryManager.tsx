@@ -6,6 +6,7 @@ import {
   removeDirectory,
   setDirectoryActive,
   scanSingleDirectory,
+  getImagesByDirectoryId,
 } from '../../utils/tauri-commands';
 import { useImageStore } from '../../store/imageStore';
 import DirectoryItem from './DirectoryItem';
@@ -18,7 +19,8 @@ type DirectoryManagerProps = {
 export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
   const [directories, setDirectories] = useState<DirectoryData[]>([]);
   const [isExpanded, setIsExpanded] = useState(true);
-  const { setImages, showToast } = useImageStore();
+  const [selectedDirectoryId, setSelectedDirectoryId] = useState<number | null>(null);
+  const { setImages, setCurrentDirectory, currentDirectory, showToast } = useImageStore();
 
   const loadDirectories = useCallback(async () => {
     try {
@@ -29,6 +31,7 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     }
   }, []);
 
+  // マウント時とcurrentDirectory変更時にディレクトリ一覧をリロード
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -43,7 +46,19 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     };
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [currentDirectory]);
+
+  const handleSelectDirectory = useCallback(async (dir: DirectoryData) => {
+    try {
+      const images = await getImagesByDirectoryId(dir.id);
+      setImages(images);
+      setCurrentDirectory(dir.path);
+      setSelectedDirectoryId(dir.id);
+    } catch (err) {
+      console.error('Failed to load images for directory:', err);
+      showToast('Failed to load images', 'error');
+    }
+  }, [setImages, setCurrentDirectory, showToast]);
 
   const handleAddDirectory = async () => {
     try {
@@ -62,6 +77,9 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     if (!confirm('Remove this directory from the gallery? Images will not be deleted from disk.')) return;
     try {
       await removeDirectory(dirId);
+      if (selectedDirectoryId === dirId) {
+        setSelectedDirectoryId(null);
+      }
       await loadDirectories();
       showToast('Directory removed', 'success');
     } catch (err) {
@@ -122,6 +140,8 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
             <div key={dir.id} className="group/dir">
               <DirectoryItem
                 directory={dir}
+                isSelected={selectedDirectoryId === dir.id}
+                onSelect={() => handleSelectDirectory(dir)}
                 onRemove={() => handleRemove(dir.id)}
                 onToggleActive={() => handleToggleActive(dir)}
                 onRescan={() => handleRescan(dir.id)}

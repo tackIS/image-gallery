@@ -161,6 +161,59 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
 }
 
 /**
+ * DB行データから ImageData に変換します
+ */
+function rowToImageData(row: {
+  id: number;
+  file_path: string;
+  file_name: string;
+  file_type: string;
+  comment: string | null;
+  tags: string | null;
+  rating: number;
+  is_favorite: number;
+  created_at: string;
+  updated_at: string;
+  duration_seconds: number | null;
+  width: number | null;
+  height: number | null;
+  video_codec: string | null;
+  audio_codec: string | null;
+  thumbnail_path: string | null;
+  directory_id: number | null;
+}): ImageData {
+  return {
+    id: row.id,
+    file_path: row.file_path,
+    file_name: row.file_name,
+    file_type: (row.file_type as 'image' | 'video') || 'image',
+    comment: row.comment,
+    tags: row.tags ? (() => {
+      try {
+        return JSON.parse(row.tags);
+      } catch (e) {
+        console.error('Failed to parse tags for image:', row.id, e);
+        return [];
+      }
+    })() : [],
+    rating: row.rating,
+    is_favorite: row.is_favorite,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    duration_seconds: row.duration_seconds,
+    width: row.width,
+    height: row.height,
+    video_codec: row.video_codec,
+    audio_codec: row.audio_codec,
+    thumbnail_path: row.thumbnail_path,
+    directory_id: row.directory_id,
+  };
+}
+
+/** SELECT対象のカラム */
+const IMAGE_COLUMNS = 'id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path, directory_id';
+
+/**
  * データベースからすべての画像を取得します
  * @returns すべての画像データの配列
  */
@@ -168,55 +221,29 @@ export async function getAllImages(): Promise<ImageData[]> {
   const db = await getDatabase();
 
   try {
-    const results = await db.select<Array<{
-      id: number;
-      file_path: string;
-      file_name: string;
-      file_type: string;
-      comment: string | null;
-      tags: string | null;
-      rating: number;
-      is_favorite: number;
-      created_at: string;
-      updated_at: string;
-      duration_seconds: number | null;
-      width: number | null;
-      height: number | null;
-      video_codec: string | null;
-      audio_codec: string | null;
-      thumbnail_path: string | null;
-      directory_id: number | null;
-    }>>(
-      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path, directory_id FROM images ORDER BY created_at DESC, id DESC'
+    const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
+      `SELECT ${IMAGE_COLUMNS} FROM images ORDER BY created_at DESC, id DESC`
     );
+    return results.map(rowToImageData);
+  } finally {
+    await db.close();
+  }
+}
 
-    // tagsをJSON文字列から配列にパース
-    return results.map((row) => ({
-      id: row.id,
-      file_path: row.file_path,
-      file_name: row.file_name,
-      file_type: (row.file_type as 'image' | 'video') || 'image',
-      comment: row.comment,
-      tags: row.tags ? (() => {
-        try {
-          return JSON.parse(row.tags);
-        } catch (e) {
-          console.error('Failed to parse tags for image:', row.id, e);
-          return [];
-        }
-      })() : [],
-      rating: row.rating,
-      is_favorite: row.is_favorite,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
-      duration_seconds: row.duration_seconds,
-      width: row.width,
-      height: row.height,
-      video_codec: row.video_codec,
-      audio_codec: row.audio_codec,
-      thumbnail_path: row.thumbnail_path,
-      directory_id: row.directory_id,
-    }));
+/**
+ * 指定ディレクトリに紐づく画像をDBから取得します
+ * @param directoryId ディレクトリID
+ * @returns ディレクトリに紐づく画像データの配列
+ */
+export async function getImagesByDirectoryId(directoryId: number): Promise<ImageData[]> {
+  const db = await getDatabase();
+
+  try {
+    const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
+      `SELECT ${IMAGE_COLUMNS} FROM images WHERE directory_id = $1 ORDER BY created_at DESC, id DESC`,
+      [directoryId]
+    );
+    return results.map(rowToImageData);
   } finally {
     await db.close();
   }
