@@ -3,21 +3,29 @@ import type { DirectoryData } from '../../types/image';
 
 type DirectoryItemProps = {
   directory: DirectoryData;
+  isSelected: boolean;
+  onSelect: () => void;
   onRemove: () => void;
   onToggleActive: () => void;
   onRescan: () => void;
 };
 
-export default function DirectoryItem({ directory, onRemove, onToggleActive, onRescan }: DirectoryItemProps) {
+export default function DirectoryItem({ directory, isSelected, onSelect, onRemove, onToggleActive, onRescan }: DirectoryItemProps) {
   const isActive = directory.is_active === 1;
   const dirName = directory.name || directory.path.split('/').filter(Boolean).pop() || directory.path;
 
   return (
-    <div className={`flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors ${
-      isActive
-        ? 'text-gray-700 dark:text-gray-300'
-        : 'text-gray-400 dark:text-gray-500 opacity-60'
-    }`}>
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-sm transition-colors text-left ${
+        isSelected
+          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+          : isActive
+            ? 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+            : 'text-gray-400 dark:text-gray-500 opacity-60'
+      }`}
+    >
       <FolderOpen size={14} className="shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="truncate text-xs font-medium" title={directory.path}>
@@ -50,6 +58,6 @@ export default function DirectoryItem({ directory, onRemove, onToggleActive, onR
           <Trash2 size={12} />
         </button>
       </div>
-    </div>
+    </button>
   );
 }
