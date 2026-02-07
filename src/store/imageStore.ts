@@ -367,6 +367,11 @@ export const useImageStore = create<ImageStore>()(
               break;
           }
 
+          // 同一値の場合、idで安定ソート
+          if (comparison === 0) {
+            comparison = a.id - b.id;
+          }
+
           return sortOrder === 'asc' ? comparison : -comparison;
         });
 

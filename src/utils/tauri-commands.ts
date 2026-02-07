@@ -187,7 +187,7 @@ export async function getAllImages(): Promise<ImageData[]> {
       thumbnail_path: string | null;
       directory_id: number | null;
     }>>(
-      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path, directory_id FROM images ORDER BY created_at DESC'
+      'SELECT id, file_path, file_name, file_type, comment, tags, rating, is_favorite, created_at, updated_at, duration_seconds, width, height, video_codec, audio_codec, thumbnail_path, directory_id FROM images ORDER BY created_at DESC, id DESC'
     );
 
     // tagsをJSON文字列から配列にパース
