@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useImageStore } from '../store/imageStore';
-import { getGroupById, getGroupImages, setRepresentativeImage } from '../utils/tauri-commands';
+import { getGroupById, getGroupImages, setRepresentativeImage, getAllImages } from '../utils/tauri-commands';
 import type { GroupData } from '../types/image';
 import AlbumHeader from './AlbumHeader';
 import Breadcrumb from './Breadcrumb';
@@ -18,6 +18,7 @@ function GroupAlbumView() {
 
   const {
     images: allImages,
+    setImages,
     setError,
     isRepImageSelectionMode,
     setRepImageSelectionMode,
@@ -69,14 +70,21 @@ function GroupAlbumView() {
       const imageIds = await getGroupImages(groupId);
       setGroupImageIds(imageIds);
 
-      // 代表画像はuseMemoで自動計算されるため、ここでの設定は不要
+      // storeの画像にグループの画像が含まれていない場合、全画像をDBから再ロード
+      const currentImages = useImageStore.getState().images;
+      const currentImageIds = new Set(currentImages.map((img) => img.id));
+      const hasMissing = imageIds.some((id) => !currentImageIds.has(id));
+      if (hasMissing) {
+        const allImgs = await getAllImages();
+        setImages(allImgs);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       console.error('Failed to load group data:', err);
     } finally {
       setIsLoading(false);
     }
-  }, [groupId, setError, updateGroup]);
+  }, [groupId, setError, setImages, updateGroup]);
 
   useEffect(() => {
     loadGroupData();
