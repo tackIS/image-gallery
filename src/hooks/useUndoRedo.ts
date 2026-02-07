@@ -137,7 +137,7 @@ export function useUndoRedo(): UndoRedoState {
         e.preventDefault();
         undo();
       }
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'Z') {
         e.preventDefault();
         redo();
       }

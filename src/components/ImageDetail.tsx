@@ -74,7 +74,7 @@ export default function ImageDetail() {
     await updateImageMetadata({
       id: selectedImage.id,
       rating: data.rating,
-      comment: data.comment || undefined,
+      comment: data.comment,
       tags: data.tags,
     });
     const updatedImages = await getAllImages();
@@ -164,6 +164,7 @@ export default function ImageDetail() {
 
           {!isSlideshowActive && (
             <MetadataPanel
+              key={selectedImage.id}
               image={selectedImage}
               currentIndex={currentIndex}
               totalCount={images.length}
