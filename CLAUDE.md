@@ -81,6 +81,30 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>
 - すべてのコンポーネントはダークモード対応必須
 - 命名: コンポーネント=PascalCase、関数/変数=camelCase、定数=UPPER_SNAKE_CASE
 
+## コードレビュー観点
+
+**レビューコメントはすべて日本語で記述すること。**
+
+### Critical（必ず検出すべき問題）
+- `any` 型の使用、`interface` の使用（`type` を優先）、クラスコンポーネントの使用
+- `dark:` プレフィックスの付け忘れ（全コンポーネントでダークモード対応必須）
+- Tailwind CSS v3 構文の混入（`@tailwind base` 等）
+- Zustand store の状態を直接変更（イミュータブル更新が必須）
+- `commands.rs` にバリデーションなしで外部入力を受け取っている
+- 新しい Tauri コマンドが `lib.rs` の `invoke_handler` に未登録、または `tauri-commands.ts` のラッパー関数がない
+- DB マイグレーションの後方互換性の破壊
+- コマンドインジェクション、XSS（`dangerouslySetInnerHTML`）、ハードコードされた秘密情報
+
+### Warning（推奨修正）
+- 100行超のコンポーネント、`invoke` の型パラメータ欠如、エラーハンドリング漏れ、`useEffect` 依存配列不備
+- 命名規約違反（PascalCase / camelCase / UPPER_SNAKE_CASE）
+- Store の `persist.partialize` や `resetAllModes` に新しい state の考慮漏れ
+
+### Ignore（フラグしない）
+- 既存コードのスタイル問題（変更された行のみレビュー対象）
+- linter が検出する問題（ESLint / Clippy に任せる）
+- コメント・ドキュメントの不足、テストカバレッジの不足
+
 ## 詳細ルール
 
 領域別の詳細規約は `.claude/rules/` を参照:
