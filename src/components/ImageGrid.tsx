@@ -1,6 +1,7 @@
 import { useImageStore } from '../store/imageStore';
 import VirtualGrid from './grid/VirtualGrid';
 import VirtualList from './grid/VirtualList';
+import TimelineView from './grid/TimelineView';
 import type { ImageData } from '../types/image';
 
 type ImageGridProps = {
@@ -42,6 +43,10 @@ export default function ImageGrid({ onImageClick, images: propsImages }: ImageGr
         <p className="text-gray-500 dark:text-gray-400">No images match the current filters</p>
       </div>
     );
+  }
+
+  if (viewMode === 'timeline') {
+    return <TimelineView images={displayImages} onImageClick={onImageClick} />;
   }
 
   if (viewMode === 'list') {

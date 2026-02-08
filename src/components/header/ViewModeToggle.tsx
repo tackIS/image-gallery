@@ -1,4 +1,4 @@
-import { LayoutGrid, List } from 'lucide-react';
+import { LayoutGrid, List, Calendar } from 'lucide-react';
 import { useImageStore } from '../../store/imageStore';
 import type { ViewMode } from '../../store/imageStore';
 
@@ -8,6 +8,7 @@ export default function ViewModeToggle() {
   const modes: { value: ViewMode; icon: typeof LayoutGrid; label: string }[] = [
     { value: 'grid', icon: LayoutGrid, label: 'Grid view' },
     { value: 'list', icon: List, label: 'List view' },
+    { value: 'timeline', icon: Calendar, label: 'Timeline view' },
   ];
 
   return (
