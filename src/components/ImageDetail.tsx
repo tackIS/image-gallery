@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useImageStore } from '../store/imageStore';
@@ -7,6 +7,7 @@ import { X, ChevronLeft, ChevronRight, Presentation } from 'lucide-react';
 import SlideshowControls from './SlideshowControls';
 import ImageViewer from './detail/ImageViewer';
 import MetadataPanel from './detail/MetadataPanel';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export default function ImageDetail() {
   const {
@@ -22,6 +23,8 @@ export default function ImageDetail() {
   } = useImageStore();
 
   const [belongingGroupIds, setBelongingGroupIds] = useState<number[]>([]);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, selectedImageId !== null);
 
   const selectedImage = images.find((img) => img.id === selectedImageId);
   const currentIndex = images.findIndex((img) => img.id === selectedImageId);
@@ -95,6 +98,10 @@ export default function ImageDetail() {
 
   return createPortal(
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label="画像詳細"
       onClick={() => setSelectedImageId(null)}
       className="fixed inset-0 z-[9999] bg-black/90 flex items-center justify-center"
     >

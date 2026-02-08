@@ -103,7 +103,7 @@ export default function SelectionBar() {
   }
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl px-4 py-3 flex items-center gap-4 z-50">
+    <div role="toolbar" aria-label="選択操作" className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl px-4 py-3 flex items-center gap-4 z-50">
       {/* 選択数表示 */}
       <div className="flex items-center gap-2">
         <CheckSquare size={18} className="text-blue-500" />
@@ -127,6 +127,8 @@ export default function SelectionBar() {
       <div className="relative" ref={addMenuRef}>
         <button
           onClick={() => setShowAddToGroupMenu(!showAddToGroupMenu)}
+          aria-expanded={showAddToGroupMenu}
+          aria-haspopup="listbox"
           className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded transition-colors ${
             groups.length === 0
               ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 cursor-not-allowed'

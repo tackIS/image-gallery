@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { X, Database, AlertTriangle } from 'lucide-react';
 import { backupDatabase, resetDatabase } from '../utils/tauri-commands';
 import { useImageStore } from '../store/imageStore';
 import ExportSection from './settings/ExportSection';
 import ImportSection from './settings/ImportSection';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface SettingsModalProps {
   onClose: () => void;
@@ -19,6 +20,8 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
   const [createBackup, setCreateBackup] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const { setImages } = useImageStore();
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   const handleResetDatabase = async () => {
     try {
@@ -62,6 +65,10 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-modal-title"
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onClick={onClose}
     >
@@ -71,7 +78,7 @@ export default function SettingsModal({ onClose }: SettingsModalProps) {
       >
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">設定</h2>
+          <h2 id="settings-modal-title" className="text-xl font-bold text-gray-900 dark:text-gray-100">設定</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-700 dark:text-gray-300"

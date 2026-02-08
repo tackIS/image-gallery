@@ -9,9 +9,11 @@ type ListItemProps = {
   media: ImageData;
   onClick: () => void;
   forceClick?: boolean;
+  tabIndex?: number;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 };
 
-export default function ListItem({ media, onClick, forceClick }: ListItemProps) {
+export default function ListItem({ media, onClick, forceClick, tabIndex, onKeyDown }: ListItemProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
@@ -53,8 +55,12 @@ export default function ListItem({ media, onClick, forceClick }: ListItemProps) 
 
   return (
     <div
+      role="listitem"
+      tabIndex={tabIndex}
+      aria-label={`${media.file_name} — ${media.file_type}${media.rating > 0 ? `, rating ${media.rating}` : ''}`}
       onClick={handleClick}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 ${
+      onKeyDown={onKeyDown}
+      className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
         isSelected ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-500' : ''
       }`}
     >

@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useImageStore } from '../../store/imageStore';
 import MediaCard from '../MediaCard';
@@ -26,8 +26,9 @@ function useColumns(density: keyof typeof DENSITY_COLUMNS): number {
 
 export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { gridDensity, setSelectedImageId } = useImageStore();
+  const { gridDensity, setSelectedImageId, isSelectionMode, toggleImageSelection } = useImageStore();
   const columns = useColumns(gridDensity);
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   const rows = useMemo(() => {
     const result: ImageData[][] = [];
@@ -54,8 +55,55 @@ export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) 
     }
   };
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, flatIndex: number) => {
+    let nextIndex = flatIndex;
+
+    switch (e.key) {
+      case 'ArrowRight':
+        e.preventDefault();
+        nextIndex = Math.min(flatIndex + 1, images.length - 1);
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        nextIndex = Math.max(flatIndex - 1, 0);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        nextIndex = Math.min(flatIndex + columns, images.length - 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        nextIndex = Math.max(flatIndex - columns, 0);
+        break;
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (isSelectionMode) {
+          toggleImageSelection(images[flatIndex].id);
+        } else if (onImageClick) {
+          onImageClick(images[flatIndex].id);
+        } else {
+          setSelectedImageId(images[flatIndex].id);
+        }
+        return;
+      default:
+        return;
+    }
+
+    setFocusedIndex(nextIndex);
+    // フォーカスを移動先のセルに当てる
+    const targetRow = Math.floor(nextIndex / columns);
+    const targetCol = nextIndex % columns;
+    const rowEl = parentRef.current?.querySelector(`[data-row-index="${targetRow}"]`);
+    const cellEl = rowEl?.querySelectorAll<HTMLElement>('[data-grid-cell]')[targetCol];
+    cellEl?.focus();
+
+    // 仮想スクロールの表示範囲に入るようスクロール
+    virtualizer.scrollToIndex(targetRow);
+  }, [images, columns, isSelectionMode, toggleImageSelection, onImageClick, setSelectedImageId, virtualizer]);
+
   return (
-    <div ref={parentRef} className="flex-1 overflow-y-auto p-4">
+    <div ref={parentRef} role="grid" className="flex-1 overflow-y-auto p-4">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -68,6 +116,8 @@ export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) 
           return (
             <div
               key={virtualRow.key}
+              role="row"
+              data-row-index={virtualRow.index}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -78,15 +128,21 @@ export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) 
               }}
               className="flex gap-4"
             >
-              {row.map((media) => (
-                <div key={media.id} style={{ width: `${100 / columns}%` }}>
-                  <MediaCard
-                    media={media}
-                    onClick={() => handleClick(media.id)}
-                    forceClick={!!onImageClick}
-                  />
-                </div>
-              ))}
+              {row.map((media, colIndex) => {
+                const flatIndex = virtualRow.index * columns + colIndex;
+                return (
+                  <div key={media.id} data-grid-cell style={{ width: `${100 / columns}%` }}>
+                    <MediaCard
+                      media={media}
+                      onClick={() => handleClick(media.id)}
+                      forceClick={!!onImageClick}
+                      tabIndex={flatIndex === focusedIndex ? 0 : -1}
+                      ariaSelected={isSelectionMode ? undefined : undefined}
+                      onKeyDown={(e) => handleKeyDown(e, flatIndex)}
+                    />
+                  </div>
+                );
+              })}
             </div>
           );
         })}

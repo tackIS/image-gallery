@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import type { GroupData, CreateGroupInput, UpdateGroupInput } from '../types/image';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 /**
  * カラープリセット（8色）
@@ -34,6 +35,8 @@ export default function GroupModal({ group, onClose, onSave }: GroupModalProps) 
   const [color, setColor] = useState(group?.color || COLOR_PRESETS[0].value);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(dialogRef, true);
 
   const isEditMode = !!group;
 
@@ -100,6 +103,10 @@ export default function GroupModal({ group, onClose, onSave }: GroupModalProps) 
 
   return (
     <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="group-modal-title"
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onClick={onClose}
     >
@@ -109,7 +116,7 @@ export default function GroupModal({ group, onClose, onSave }: GroupModalProps) 
       >
         {/* ヘッダー */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <h2 id="group-modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {isEditMode ? 'Edit Group' : 'Create New Group'}
           </h2>
           <button

@@ -128,6 +128,8 @@ export default function Sidebar({ isOpen }: SidebarProps) {
   return (
     <>
       <aside
+        role="navigation"
+        aria-label="サイドバー"
         className={`bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full transition-all duration-[--transition-slow] ${
           collapsed ? 'w-16' : 'w-64'
         }`}
@@ -156,6 +158,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
           <div className={collapsed ? '' : 'px-1'}>
             <button
               onClick={handleSelectAllImages}
+              aria-current={isAllImagesActive ? 'page' : undefined}
               className={`w-full flex items-center rounded-lg transition-colors ${
                 isAllImagesActive
                   ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200'
@@ -194,6 +197,7 @@ export default function Sidebar({ isOpen }: SidebarProps) {
                     <button
                       key={group.id}
                       onClick={() => handleSelectGroup(group.id)}
+                      aria-current={currentGroupId === group.id ? 'page' : undefined}
                       className={`w-full flex justify-center p-2 rounded-lg transition-colors ${
                         currentGroupId === group.id
                           ? 'bg-blue-100 dark:bg-blue-900'

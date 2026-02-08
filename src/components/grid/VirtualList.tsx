@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useImageStore } from '../../store/imageStore';
 import ListItem from './ListItem';
@@ -12,6 +12,7 @@ type VirtualListProps = {
 export default function VirtualList({ images, onImageClick }: VirtualListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
   const { setSelectedImageId } = useImageStore();
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   const virtualizer = useVirtualizer({
     count: images.length,
@@ -28,8 +29,38 @@ export default function VirtualList({ images, onImageClick }: VirtualListProps) 
     }
   };
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
+    let nextIndex = index;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        nextIndex = Math.min(index + 1, images.length - 1);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        nextIndex = Math.max(index - 1, 0);
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (onImageClick) {
+          onImageClick(images[index].id);
+        } else {
+          setSelectedImageId(images[index].id);
+        }
+        return;
+      default:
+        return;
+    }
+
+    setFocusedIndex(nextIndex);
+    const itemEl = parentRef.current?.querySelector<HTMLElement>(`[data-list-index="${nextIndex}"]`);
+    itemEl?.querySelector<HTMLElement>('[role="listitem"]')?.focus();
+    virtualizer.scrollToIndex(nextIndex);
+  }, [images, onImageClick, setSelectedImageId, virtualizer]);
+
   return (
-    <div ref={parentRef} className="flex-1 overflow-y-auto p-4">
+    <div ref={parentRef} role="list" className="flex-1 overflow-y-auto p-4">
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -42,6 +73,7 @@ export default function VirtualList({ images, onImageClick }: VirtualListProps) 
           return (
             <div
               key={virtualRow.key}
+              data-list-index={virtualRow.index}
               style={{
                 position: 'absolute',
                 top: 0,
@@ -55,6 +87,8 @@ export default function VirtualList({ images, onImageClick }: VirtualListProps) 
                 media={media}
                 onClick={() => handleClick(media.id)}
                 forceClick={!!onImageClick}
+                tabIndex={virtualRow.index === focusedIndex ? 0 : -1}
+                onKeyDown={(e) => handleKeyDown(e, virtualRow.index)}
               />
             </div>
           );

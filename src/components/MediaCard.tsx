@@ -10,6 +10,9 @@ type MediaCardProps = {
   media: ImageData;
   onClick: () => void;
   forceClick?: boolean;
+  tabIndex?: number;
+  ariaSelected?: boolean;
+  onKeyDown?: (e: React.KeyboardEvent) => void;
 };
 
 /**
@@ -19,7 +22,7 @@ type MediaCardProps = {
  * 動画の場合はvideoタグでサムネイル表示し、再生アイコンを表示します。
  * エラー時には適切なエラーメッセージを表示します。
  */
-export default function MediaCard({ media, onClick, forceClick }: MediaCardProps) {
+export default function MediaCard({ media, onClick, forceClick, tabIndex, ariaSelected, onKeyDown }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
@@ -87,7 +90,10 @@ export default function MediaCard({ media, onClick, forceClick }: MediaCardProps
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 shadow-[--shadow-card] hover:shadow-[--shadow-card-hover] hover:scale-[1.02] hover:ring-2 hover:ring-blue-400 transition-all duration-[--transition-fast] cursor-pointer ${
+      tabIndex={tabIndex}
+      aria-selected={ariaSelected}
+      onKeyDown={onKeyDown}
+      className={`relative aspect-square overflow-hidden rounded-lg bg-gray-200 dark:bg-gray-700 shadow-[--shadow-card] hover:shadow-[--shadow-card-hover] hover:scale-[1.02] hover:ring-2 hover:ring-blue-400 transition-all duration-[--transition-fast] cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 ${
         isSelected ? 'ring-4 ring-blue-500' : ''
       } ${isDragging ? 'opacity-50' : ''}`}
       onClick={handleCardClick}

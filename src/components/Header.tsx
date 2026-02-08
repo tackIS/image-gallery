@@ -44,7 +44,7 @@ export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) 
 
   return (
     <>
-      <header className="bg-white dark:bg-gray-800 shadow-sm px-4 py-2 flex items-center gap-3">
+      <header role="banner" className="bg-white dark:bg-gray-800 shadow-sm px-4 py-2 flex items-center gap-3">
         {/* Left: Sidebar toggle + Title */}
         <button
           onClick={onToggleSidebar}
