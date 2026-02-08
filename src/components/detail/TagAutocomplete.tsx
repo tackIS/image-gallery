@@ -73,7 +73,7 @@ export default function TagAutocomplete({ value, onChange, onAddTag, excludeTags
         onFocus={() => { if (value.trim() && suggestions.length > 0) setIsOpen(true); }}
         onBlur={() => { setTimeout(() => setIsOpen(false), 150); }}
         placeholder="Add tag..."
-        className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full px-2 py-1 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded text-gray-900 dark:text-white text-sm placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
       {showDropdown && (
         <ul
