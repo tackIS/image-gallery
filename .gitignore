@@ -31,5 +31,9 @@ npm-debug.log*
 *.sqlite
 *.sqlite3
 
+# Playwright
+test-results/
+playwright-report/
+
 # Other
 .tmp/
