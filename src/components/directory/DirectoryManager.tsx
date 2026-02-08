@@ -2,6 +2,7 @@ import { useEffect, useCallback, useState } from 'react';
 import { FolderPlus } from 'lucide-react';
 import {
   getAllDirectories,
+  getAllImages,
   selectAndAddDirectory,
   removeDirectory,
   setDirectoryActive,
@@ -73,6 +74,12 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
     try {
       const dir = await selectAndAddDirectory();
       if (dir) {
+        // 追加後に自動スキャンしてそのディレクトリを選択
+        await scanSingleDirectory(dir.id);
+        const images = await getImagesByDirectoryId(dir.id);
+        setImages(images);
+        setCurrentDirectory(dir.path);
+        setSelectedDirectoryId(dir.id);
         await loadDirectories();
         showToast(`Added directory: ${dir.name}`, 'success');
       }
@@ -108,8 +115,16 @@ export default function DirectoryManager({ collapsed }: DirectoryManagerProps) {
 
   const handleRescan = async (dirId: number) => {
     try {
-      const images = await scanSingleDirectory(dirId);
-      setImages(images);
+      // スキャンを実行（DBに新規ファイルを登録）
+      await scanSingleDirectory(dirId);
+      // 現在の表示状態に応じて画像をリロード
+      if (selectedDirectoryId !== null) {
+        const images = await getImagesByDirectoryId(selectedDirectoryId);
+        setImages(images);
+      } else {
+        const images = await getAllImages();
+        setImages(images);
+      }
       await loadDirectories();
       showToast('Directory rescanned', 'success');
     } catch (err) {

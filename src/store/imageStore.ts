@@ -15,7 +15,7 @@ export type SortOrder = 'asc' | 'desc';
 /**
  * 表示モードの型
  */
-export type ViewMode = 'grid' | 'list';
+export type ViewMode = 'grid' | 'list' | 'timeline';
 
 /**
  * グリッド密度の型

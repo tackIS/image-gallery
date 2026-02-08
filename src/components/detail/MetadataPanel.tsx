@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Edit2, Save, XCircle, X, Folder, Info, Tags, MessageSquare } from 'lucide-react';
 import type { ImageData, GroupData } from '../../types/image';
 import RatingStars from './RatingStars';
+import TagAutocomplete from './TagAutocomplete';
 
 type MetadataPanelProps = {
   image: ImageData;
@@ -221,13 +222,17 @@ export default function MetadataPanel({
                     ))}
                   </div>
                   <div className="flex gap-1">
-                    <input
-                      type="text"
+                    <TagAutocomplete
                       value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } }}
-                      placeholder="Add tag..."
-                      className="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      onChange={setNewTag}
+                      onAddTag={(tag) => {
+                        const trimmed = tag.trim();
+                        if (trimmed && !editTags.some(t => t.toLowerCase() === trimmed.toLowerCase())) {
+                          setEditTags([...editTags, trimmed]);
+                          setNewTag('');
+                        }
+                      }}
+                      excludeTags={editTags}
                     />
                     <button
                       onClick={handleAddTag}
