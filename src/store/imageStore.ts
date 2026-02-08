@@ -117,6 +117,9 @@ interface ImageStore {
   /** 代表画像選択中のグループID */
   repImageSelectionGroupId: number | null;
 
+  /** 選択されたディレクトリID（nullは全画像表示） */
+  selectedDirectoryId: number | null;
+
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
   /** 現在のディレクトリパスを設定します */
@@ -200,6 +203,9 @@ interface ImageStore {
   /** 代表画像選択モードを設定します */
   setRepImageSelectionMode: (mode: boolean, groupId?: number | null) => void;
 
+  /** 選択されたディレクトリIDを設定します */
+  setSelectedDirectoryId: (id: number | null) => void;
+
   /** すべての選択モードをリセットします（ページ遷移時に使用） */
   resetAllModes: () => void;
 }
@@ -246,6 +252,8 @@ export const useImageStore = create<ImageStore>()(
       // Phase 5: 代表画像選択モード
       isRepImageSelectionMode: false,
       repImageSelectionGroupId: null,
+
+      selectedDirectoryId: null,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
@@ -465,6 +473,8 @@ export const useImageStore = create<ImageStore>()(
           isSelectionMode: mode ? false : state.isSelectionMode,
           selectedImageIds: mode ? [] : state.selectedImageIds,
         })),
+
+      setSelectedDirectoryId: (id) => set({ selectedDirectoryId: id }),
 
       // ページ遷移時にすべての選択モードをリセット
       resetAllModes: () =>
