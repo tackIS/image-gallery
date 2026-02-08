@@ -83,6 +83,8 @@ Co-Authored-By: Claude <model> <noreply@anthropic.com>
 
 ## コードレビュー観点
 
+**レビューコメントはすべて日本語で記述すること。**
+
 ### Critical（必ず検出すべき問題）
 - `any` 型の使用、`interface` の使用（`type` を優先）、クラスコンポーネントの使用
 - `dark:` プレフィックスの付け忘れ（全コンポーネントでダークモード対応必須）
