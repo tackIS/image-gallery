@@ -1,27 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { useImageStore } from '../imageStore';
+import { makeImage } from '../../test-utils';
 import type { ImageData } from '../../types/image';
-
-const makeImage = (overrides: Partial<ImageData> = {}): ImageData => ({
-  id: 1,
-  file_path: '/path/to/image.jpg',
-  file_name: 'image.jpg',
-  file_type: 'image',
-  comment: null,
-  tags: [],
-  rating: 0,
-  is_favorite: 0,
-  created_at: '2026-01-15T10:00:00Z',
-  updated_at: '2026-01-15T10:00:00Z',
-  duration_seconds: null,
-  width: null,
-  height: null,
-  video_codec: null,
-  audio_codec: null,
-  thumbnail_path: null,
-  directory_id: null,
-  ...overrides,
-});
 
 const sampleImages: ImageData[] = [
   makeImage({ id: 1, file_name: 'banana.jpg', rating: 3, created_at: '2026-01-10T00:00:00Z', tags: ['fruit', 'yellow'] }),
@@ -46,6 +26,8 @@ describe('imageStore', () => {
     });
     store.setSearchQuery('');
     store.setSelectedGroupId(null);
+    store.clearSelection();
+    useImageStore.setState({ toasts: [], isRepImageSelectionMode: false, repImageSelectionGroupId: null });
   });
 
   describe('sorting', () => {
@@ -230,6 +212,128 @@ describe('imageStore', () => {
       const updated = useImageStore.getState().images.find((i) => i.id === 1);
       expect(updated?.comment).toBe('test comment');
       expect(updated?.rating).toBe(5);
+    });
+  });
+
+  describe('group filtering', () => {
+    it('filters images by selectedGroupId and groupFilteredImageIds', () => {
+      const store = useImageStore.getState();
+      store.setSelectedGroupId(1);
+      store.setGroupFilteredImageIds([1, 3]);
+      const filtered = store.getSortedImages();
+      expect(filtered.map((i) => i.id).sort()).toEqual([1, 3]);
+    });
+
+    it('toggleSelectAll selects all filtered images', () => {
+      const store = useImageStore.getState();
+      store.toggleSelectAll();
+      const state = useImageStore.getState();
+      expect(state.selectedImageIds.sort()).toEqual([1, 2, 3, 4]);
+    });
+
+    it('toggleSelectAll deselects when all are selected', () => {
+      const store = useImageStore.getState();
+      store.toggleSelectAll();
+      // All selected, now toggle again
+      useImageStore.getState().toggleSelectAll();
+      expect(useImageStore.getState().selectedImageIds).toEqual([]);
+    });
+  });
+
+  describe('resetAllModes', () => {
+    it('resets isSelectionMode and isRepImageSelectionMode', () => {
+      const store = useImageStore.getState();
+      store.toggleSelectionMode();
+      store.toggleImageSelection(1);
+      store.setRepImageSelectionMode(true, 5);
+
+      useImageStore.getState().resetAllModes();
+      const state = useImageStore.getState();
+      expect(state.isSelectionMode).toBe(false);
+      expect(state.selectedImageIds).toEqual([]);
+      expect(state.isRepImageSelectionMode).toBe(false);
+      expect(state.repImageSelectionGroupId).toBe(null);
+    });
+  });
+
+  describe('toast', () => {
+    it('showToast adds to toasts array', () => {
+      vi.useFakeTimers();
+      const store = useImageStore.getState();
+      store.showToast('Test message', 'success');
+      const state = useImageStore.getState();
+      expect(state.toasts).toHaveLength(1);
+      expect(state.toasts[0].message).toBe('Test message');
+      expect(state.toasts[0].type).toBe('success');
+      vi.useRealTimers();
+    });
+
+    it('removeToast removes specified toast', () => {
+      vi.useFakeTimers();
+      const store = useImageStore.getState();
+      store.showToast('Toast A', 'info');
+      store.showToast('Toast B', 'error');
+      const toasts = useImageStore.getState().toasts;
+      expect(toasts).toHaveLength(2);
+
+      useImageStore.getState().removeToast(toasts[0].id);
+      expect(useImageStore.getState().toasts).toHaveLength(1);
+      expect(useImageStore.getState().toasts[0].message).toBe('Toast B');
+      vi.useRealTimers();
+    });
+  });
+
+  describe('view mode', () => {
+    it('setViewMode changes view mode', () => {
+      const store = useImageStore.getState();
+      store.setViewMode('list');
+      expect(useImageStore.getState().viewMode).toBe('list');
+      store.setViewMode('timeline');
+      expect(useImageStore.getState().viewMode).toBe('timeline');
+      store.setViewMode('grid');
+      expect(useImageStore.getState().viewMode).toBe('grid');
+    });
+
+    it('setGridDensity changes grid density', () => {
+      const store = useImageStore.getState();
+      store.setGridDensity('compact');
+      expect(useImageStore.getState().gridDensity).toBe('compact');
+      store.setGridDensity('comfortable');
+      expect(useImageStore.getState().gridDensity).toBe('comfortable');
+      store.setGridDensity('normal');
+      expect(useImageStore.getState().gridDensity).toBe('normal');
+    });
+
+    it('toggleSidebarCollapsed toggles sidebar state', () => {
+      const store = useImageStore.getState();
+      expect(store.isSidebarCollapsed).toBe(false);
+      store.toggleSidebarCollapsed();
+      expect(useImageStore.getState().isSidebarCollapsed).toBe(true);
+      useImageStore.getState().toggleSidebarCollapsed();
+      expect(useImageStore.getState().isSidebarCollapsed).toBe(false);
+    });
+  });
+
+  describe('slideshow', () => {
+    it('startSlideshow sets isSlideshowActive to true', () => {
+      const store = useImageStore.getState();
+      store.startSlideshow();
+      expect(useImageStore.getState().isSlideshowActive).toBe(true);
+    });
+
+    it('stopSlideshow sets isSlideshowActive to false', () => {
+      const store = useImageStore.getState();
+      store.startSlideshow();
+      useImageStore.getState().stopSlideshow();
+      expect(useImageStore.getState().isSlideshowActive).toBe(false);
+    });
+
+    it('setSlideshowInterval sets interval value', () => {
+      const store = useImageStore.getState();
+      store.setSlideshowInterval(10);
+      expect(useImageStore.getState().slideshowInterval).toBe(10);
+      useImageStore.getState().setSlideshowInterval(3);
+      expect(useImageStore.getState().slideshowInterval).toBe(3);
     });
   });
 });
