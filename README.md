@@ -6,7 +6,7 @@
 
 - **メディアファイル管理**: ディレクトリをスキャンして画像・動画を一覧表示
 - **動画対応**: MP4/WebM/MOV動画の再生、自動サムネイル生成、メタデータ抽出（長さ・解像度・コーデック情報）、カスタムプレイヤー
-- **メタデータ編集**: コメント、タグ、評価の追加・編集
+- **メタデータ編集**: コメント、タグ（オートコンプリート付き）、評価の追加・編集
 - **お気に入り機能**: 画像・動画をお気に入りに登録して一覧表示
 - **検索・フィルタリング**:
   - ファイル名による検索
@@ -14,12 +14,19 @@
   - 評価フィルター（最低評価値の設定）
   - タグフィルター（AND/OR検索モード対応）
   - お気に入りのみ表示
+- **表示モード**: グリッド / リスト / タイムライン（年月別グルーピング）、グリッド密度設定（compact/normal/comfortable）
+- **仮想スクロール**: 大量の画像・動画でも快適に閲覧（VirtualGrid / VirtualList）
 - **ソート機能**: 名前、作成日時、評価による並び替え（昇順/降順）
-- **ダークモード**: システム設定に応じた自動切り替え、手動トグル機能
-- **レスポンシブ対応**: モバイル、タブレット、デスクトップに最適化されたUI（開発時のプレビューに対応）
+- **グループ管理**: グループの作成/編集/削除、画像の複数選択→グループ追加、代表画像設定、D&Dによる並べ替え
+- **グループアルバムビュー**: グループ内の画像一覧表示、コメント機能
+- **マルチディレクトリ管理**: 複数ディレクトリの追加/削除/有効無効切替/リスキャン、ファイルウォッチャーによる自動検出
+- **Undo/Redo**: メタデータ編集操作の取り消し・やり直し
+- **エクスポート/インポート**: メタデータのJSON/CSV形式でのエクスポート、JSONからのインポート
 - **スライドショー**: 自動再生、速度調整（3秒/5秒/10秒）、前後スキップ
+- **ダークモード**: システム設定に応じた自動切り替え、手動トグル機能
+- **レスポンシブ対応**: モバイル、タブレット、デスクトップに最適化されたUI
 - **データ永続化**: SQLiteによるメタデータ管理
-- **エラーハンドリング**: メディアファイル読み込みエラーの適切な処理
+- **テスト基盤**: Vitest + React Testing Library によるユニットテスト
 
 ## サポートフォーマット
 
@@ -51,6 +58,13 @@
 - tauri-plugin-dialog (ディレクトリ選択)
 - tauri-plugin-fs (ファイルシステムアクセス)
 - ffmpeg/ffprobe (動画メタデータ抽出、サムネイル生成)
+
+### テスト
+- Vitest (テストランナー)
+- React Testing Library (コンポーネントテスト)
+- happy-dom (ブラウザ環境)
+
+詳細なアーキテクチャについては [doc/architecture.md](./doc/architecture.md) を参照してください。
 
 ## 開発環境のセットアップ
 
@@ -102,14 +116,53 @@ npm run tauri:build
 
 ```
 image-gallery/                     # リポジトリルート
-├── doc/                           # ドキュメント（プロジェクト計画・要件定義）
+├── doc/                           # ドキュメント
+│   ├── architecture.md            # アーキテクチャ概要
+│   ├── er-diagram.md              # ER図（Mermaid）
+│   └── commands-reference.md      # Tauriコマンドリファレンス
 ├── src/                           # React フロントエンドコード
+│   ├── __mocks__/                 # Tauriモック（テスト用）
 │   ├── components/                # UIコンポーネント
-│   │   ├── Header                 # ヘッダー（ディレクトリ選択、統計表示）
-│   │   ├── ImageGrid              # グリッド表示
-│   │   ├── MediaCard              # メディアカード（画像/動画）
+│   │   ├── detail/                # 詳細表示関連
+│   │   │   ├── ImageViewer        # 画像・動画ビューア
+│   │   │   ├── MetadataPanel      # メタデータ編集パネル
+│   │   │   ├── TagAutocomplete    # タグオートコンプリート
+│   │   │   └── RatingStars        # 評価星
+│   │   ├── grid/                  # グリッド・リスト表示
+│   │   │   ├── VirtualGrid        # 仮想スクロールグリッド
+│   │   │   ├── VirtualList        # 仮想スクロールリスト
+│   │   │   ├── TimelineView       # タイムラインビュー
+│   │   │   └── ListItem           # リスト項目
+│   │   ├── header/                # ヘッダー関連
+│   │   │   ├── SearchBar          # 検索バー
+│   │   │   ├── FilterPanel        # フィルターパネル
+│   │   │   ├── SortControls       # ソートコントロール
+│   │   │   └── ViewModeToggle     # 表示モード切替
+│   │   ├── directory/             # ディレクトリ管理
+│   │   │   ├── DirectoryManager   # ディレクトリ管理パネル
+│   │   │   └── DirectoryItem      # ディレクトリ項目
+│   │   ├── dnd/                   # ドラッグ&ドロップ
+│   │   │   ├── DndProvider        # D&Dプロバイダー
+│   │   │   └── DragOverlay        # ドラッグオーバーレイ
+│   │   ├── settings/              # 設定関連
+│   │   │   ├── ExportSection      # エクスポート
+│   │   │   └── ImportSection      # インポート
+│   │   ├── Header                 # ヘッダー
+│   │   ├── Sidebar                # サイドバー
+│   │   ├── MainGallery            # メインギャラリー
+│   │   ├── ImageGrid              # メディアグリッド
+│   │   ├── MediaCard              # メディアカード
 │   │   ├── ImageDetail            # 詳細モーダル
 │   │   ├── VideoPlayer            # カスタム動画プレイヤー
+│   │   ├── GroupModal             # グループ作成・編集モーダル
+│   │   ├── GroupAlbumView         # グループアルバムビュー
+│   │   ├── GroupItem              # グループ項目
+│   │   ├── GroupComments          # グループコメント
+│   │   ├── AlbumHeader            # アルバムヘッダー
+│   │   ├── Breadcrumb             # パンくずナビ
+│   │   ├── SelectionBar           # 選択モードバー
+│   │   ├── UndoRedoBar            # Undo/Redoバー
+│   │   ├── Toast                  # トースト通知
 │   │   ├── SettingsModal          # 設定モーダル
 │   │   ├── SlideshowControls      # スライドショーコントロール
 │   │   ├── ErrorBoundary          # エラーバウンダリ
@@ -118,34 +171,61 @@ image-gallery/                     # リポジトリルート
 │   ├── hooks/                     # カスタムフック
 │   │   └── useTheme               # テーマ管理フック
 │   ├── store/                     # Zustand状態管理
+│   │   └── __tests__/             # ストアテスト
 │   ├── types/                     # TypeScript型定義
 │   ├── utils/                     # ユーティリティ関数
+│   │   └── tauri-commands         # Tauri APIラッパー
 │   ├── App                        # アプリケーションルート
 │   ├── index                      # グローバルスタイル（Tailwind設定）
 │   └── main                       # エントリーポイント
 ├── src-tauri/                     # Tauri バックエンドコード（Rust）
 │   ├── src/
 │   │   ├── main                   # エントリーポイント
+│   │   ├── lib                    # プラグイン初期化・コマンド登録
 │   │   ├── commands               # Tauriコマンド定義
-│   │   ├── db                     # データベース管理
+│   │   ├── db                     # データベース管理・マイグレーション
 │   │   ├── fs_utils               # ファイルシステムユーティリティ
-│   │   └── video_utils            # 動画処理（ffmpeg統合、メタデータ抽出、サムネイル生成）
+│   │   ├── video_utils            # 動画処理（ffmpeg統合）
+│   │   └── watcher                # ファイルウォッチャー
 │   └── tauri.conf                 # Tauri設定
 ├── CLAUDE                         # Claude Code 開発ガイド
 ├── README                         # このファイル
 ├── package.json                   # npm設定
-└── vite.config                    # Vite設定
+├── vite.config                    # Vite設定
+└── vitest.setup                   # テストセットアップ
 ```
 
 ## 使い方
 
-1. **ディレクトリを選択**: 「Select Directory」ボタンをクリックして、画像・動画が含まれるフォルダを選択
-2. **メディアを閲覧**: グリッド表示で一覧を確認。動画には再生アイコンが表示されます
+### 基本操作
+
+1. **ディレクトリを追加**: サイドバーの「ディレクトリ追加」ボタンから画像・動画が含まれるフォルダを選択
+2. **メディアを閲覧**: グリッド/リスト/タイムラインビューで一覧を確認
 3. **詳細を表示**: メディアをクリックして詳細モーダルを開く
    - 画像: 高品質プレビュー表示
    - 動画: カスタムプレイヤーで再生（再生/一時停止、シーク、音量、フルスクリーン対応）
-4. **メタデータを編集**: 詳細モーダルでコメント、タグ、評価を追加・編集
+4. **メタデータを編集**: 詳細モーダルでコメント、タグ（オートコンプリート付き）、評価を追加・編集
 5. **ナビゲーション**: 前へ/次へボタンで他のメディアに移動
+
+### グループ管理
+
+1. **グループ作成**: サイドバーの「+」ボタンからグループを作成（名前・色・説明を設定）
+2. **画像をグループに追加**: 選択モードで画像を複数選択し、グループに追加
+3. **アルバムビュー**: グループをクリックしてアルバムビューを開く
+4. **代表画像設定**: アルバムビュー内で代表画像を設定
+5. **コメント**: アルバムビューでグループにコメントを追加
+
+### マルチディレクトリ管理
+
+1. **ディレクトリ追加**: サイドバーのディレクトリ管理から複数のディレクトリを追加
+2. **有効/無効切替**: ディレクトリごとに表示の有効/無効を切り替え
+3. **リスキャン**: 個別または全ディレクトリを再スキャン
+4. **ファイルウォッチャー**: ディレクトリ内のファイル変更を自動検出
+
+### エクスポート/インポート
+
+1. **エクスポート**: 設定 → エクスポートから JSON または CSV 形式で出力
+2. **インポート**: 設定 → インポートから JSON ファイルを読み込み（メタデータとグループを復元）
 
 ## 開発コマンド
 
@@ -158,8 +238,14 @@ npm run tauri:dev          # フロントエンド + Tauri
 npm run build              # フロントエンドビルド
 npm run tauri:build        # アプリケーション全体のビルド
 
-# リント
+# テスト
+npm run test               # テスト実行
+npm run test:watch         # ウォッチモード
+npm run test:coverage      # カバレッジレポート
+
+# リント・型チェック
 npm run lint               # ESLintチェック
+npx tsc --noEmit           # TypeScript型チェック
 
 # Tauriコマンド
 npm run tauri -- [command] # Tauri CLIの実行
@@ -173,42 +259,25 @@ npm run tauri -- [command] # Tauri CLIの実行
 ~/Library/Application Support/com.imagegallery/gallery.db
 ```
 
-**注意**: 旧バージョン（v0.1.0以前）では `~/.image_gallery/gallery.db` にデータベースが保存されていました。アプリケーションは初回起動時に自動的に新しい場所へ移行します。
+### データベース設計
 
-### データベーススキーマ
+6テーブル構成: `images`, `directories`, `groups`, `image_groups`, `group_comments`, `action_log`
 
-```sql
-CREATE TABLE images (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    file_path TEXT NOT NULL UNIQUE,
-    file_name TEXT NOT NULL,
-    file_type TEXT DEFAULT 'image',  -- 'image' または 'video'
-    comment TEXT,
-    tags TEXT,                        -- JSON配列形式
-    rating INTEGER DEFAULT 0,         -- 0-5
-    is_favorite INTEGER DEFAULT 0,    -- 0: 通常, 1: お気に入り
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+詳細なER図とスキーマは [doc/er-diagram.md](./doc/er-diagram.md) を参照してください。
 
-    -- Phase 3: 動画メタデータ（v4で追加）
-    duration_seconds REAL,            -- 動画の長さ（秒）
-    width INTEGER,                    -- 解像度（幅）
-    height INTEGER,                   -- 解像度（高さ）
-    video_codec TEXT,                 -- ビデオコーデック
-    audio_codec TEXT,                 -- オーディオコーデック
-    thumbnail_path TEXT               -- サムネイル画像パス
-);
-```
+### マイグレーション履歴
 
-### データベースのマイグレーション
+アプリケーションは起動時に自動的にデータベースマイグレーションを実行します。
 
-アプリケーションは起動時に自動的にデータベースマイグレーションを実行します。新しいバージョンにアップデートした際、データベーススキーマが自動的に更新されます。
-
-**マイグレーション履歴:**
-- Version 1: 初期テーブル作成
-- Version 2: `file_type`カラム追加（MP4動画対応）
-- Version 3: `is_favorite`カラム追加（お気に入り機能）
-- Version 4: 動画メタデータカラム追加（`duration_seconds`, `width`, `height`, `video_codec`, `audio_codec`, `thumbnail_path`）、WebM/MOV対応
+| Version | 説明 | Phase |
+|---------|------|-------|
+| v1 | 初期テーブル作成（images） | Phase 1 |
+| v2 | `file_type` カラム追加（動画対応） | Phase 2 |
+| v3 | `is_favorite` カラム追加（お気に入り機能） | Phase 2 |
+| v4 | 動画メタデータカラム追加（duration, resolution, codecs, thumbnail） | Phase 3 |
+| v5 | `groups` + `image_groups` テーブル追加（グループ管理） | Phase 4 |
+| v6 | `group_comments` テーブル追加（コメント機能） | Phase 5 |
+| v7 | `directories` + `action_log` テーブル追加、`images.directory_id` 追加 | Phase 6 |
 
 ### データベースのバックアップ
 
@@ -321,20 +390,20 @@ rm ~/Library/Application\ Support/com.imagegallery/gallery.db
    npm run tauri:dev
    ```
 
+## ドキュメント
+
+| ドキュメント | 内容 |
+|-------------|------|
+| [CLAUDE.md](./CLAUDE.md) | Claude Code 開発ガイド |
+| [doc/architecture.md](./doc/architecture.md) | アーキテクチャ概要・システム構成図 |
+| [doc/er-diagram.md](./doc/er-diagram.md) | ER図・マイグレーション履歴 |
+| [doc/commands-reference.md](./doc/commands-reference.md) | 全Tauriコマンドリファレンス |
+
 ## 開発者向け情報
 
 ### Claude Codeでの開発
 
 このプロジェクトはClaude Codeでの開発に最適化されています。開発を始める前に **[CLAUDE.md](./CLAUDE.md)** を必ずお読みください。
-
-**CLAUDEガイドの内容:**
-- プロジェクト構造の詳細説明
-- Tailwind CSS v4の重要な注意点
-- ダークモード対応のガイドライン
-- コーディング規約
-- 開発ワークフロー
-- トラブルシューティング
-- Claude Codeとの協働のコツ
 
 ### 開発ワークフロー
 
