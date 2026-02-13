@@ -44,13 +44,11 @@ function MainGallery() {
   useEffect(() => {
     const init = async () => {
       try {
-        setLoading(true);
-
         // データベースパスを取得（ディレクトリ作成のみ）
         const dbPath = await getDatabasePath();
         console.log('Database path:', dbPath);
 
-        // データベース初期化（Tauriが自動でマイグレーションを実行）
+        // データベース初期化は毎回実行（接続プールの確立に必要）
         await initializeDatabase();
         console.log('Database initialized successfully');
 
@@ -59,8 +57,14 @@ function MainGallery() {
         setGroups(groups);
         console.log(`Loaded ${groups.length} groups`);
 
+        // 既に画像が読み込み済みで、同じディレクトリの場合は再フェッチをスキップ
+        const state = useImageStore.getState();
+        const dirId = state.selectedDirectoryId;
+        if (state.images.length > 0 && dirId === state._lastLoadedDirectoryId) return;
+
+        setLoading(true);
+
         // selectedDirectoryId に応じて画像をロード
-        const dirId = useImageStore.getState().selectedDirectoryId;
         if (dirId !== null) {
           const dirImages = await getImagesByDirectoryId(dirId);
           setImages(dirImages);
@@ -68,6 +72,7 @@ function MainGallery() {
           const allImages = await getAllImages();
           setImages(allImages);
         }
+        useImageStore.setState({ _lastLoadedDirectoryId: dirId });
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
         console.error('Database initialization error:', err);
