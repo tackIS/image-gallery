@@ -52,17 +52,24 @@ export async function backupDatabase(): Promise<string> {
  * @throws リセットに失敗した場合
  */
 export async function resetDatabase(): Promise<string> {
+  dbInstance = null;
   return await invoke<string>('reset_database');
 }
 
 /**
- * データベース接続を取得します
- * @returns データベース接続
+ * データベース接続を取得します（シングルトン）
+ * Database.load() はURLベースでキャッシュされた共有プールを返すため、
+ * close() すると他の呼び出し元でも "closed pool" エラーが発生する。
+ * そのため接続は閉じずに再利用する。
  */
+let dbInstance: Database | null = null;
+
 async function getDatabase(): Promise<Database> {
+  if (dbInstance) return dbInstance;
   const dbPath = await getDatabasePath();
   const dbUrl = `sqlite:${dbPath}`;
-  return await Database.load(dbUrl);
+  dbInstance = await Database.load(dbUrl);
+  return dbInstance;
 }
 
 // 後のステップで追加する関数のプレースホルダー
@@ -87,77 +94,73 @@ export async function scanDirectory(path: string): Promise<ImageData[]> {
   // データベースに接続
   const db = await getDatabase();
 
-  try {
-    // ディレクトリレコードが存在するか確認、なければ自動作成
-    let dirResult = await db.select<{ id: number }[]>(
+  // ディレクトリレコードが存在するか確認、なければ自動作成
+  let dirResult = await db.select<{ id: number }[]>(
+    'SELECT id FROM directories WHERE path = $1',
+    [path]
+  );
+
+  let directoryId: number | null = null;
+  if (dirResult.length > 0) {
+    directoryId = dirResult[0].id;
+  } else {
+    // ディレクトリ名を抽出
+    const dirName = path.split('/').filter(Boolean).pop() || path;
+    await db.execute(
+      'INSERT INTO directories (path, name) VALUES ($1, $2)',
+      [path, dirName]
+    );
+    dirResult = await db.select<{ id: number }[]>(
       'SELECT id FROM directories WHERE path = $1',
       [path]
     );
-
-    let directoryId: number | null = null;
     if (dirResult.length > 0) {
       directoryId = dirResult[0].id;
-    } else {
-      // ディレクトリ名を抽出
-      const dirName = path.split('/').filter(Boolean).pop() || path;
-      await db.execute(
-        'INSERT INTO directories (path, name) VALUES ($1, $2)',
-        [path, dirName]
-      );
-      dirResult = await db.select<{ id: number }[]>(
-        'SELECT id FROM directories WHERE path = $1',
-        [path]
-      );
-      if (dirResult.length > 0) {
-        directoryId = dirResult[0].id;
-      }
     }
-
-    // データベースにファイルを挿入
-    for (const fileInfo of fileInfos) {
-      // 既に存在するかチェック
-      const existing = await db.select<{ count: number }[]>(
-        'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
-        [fileInfo.file_path]
-      );
-
-      if (existing[0].count === 0) {
-        await db.execute(
-          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
-          [
-            fileInfo.file_path,
-            fileInfo.file_name,
-            fileInfo.file_type,
-            fileInfo.duration_seconds ?? null,
-            fileInfo.width ?? null,
-            fileInfo.height ?? null,
-            fileInfo.video_codec ?? null,
-            fileInfo.audio_codec ?? null,
-            directoryId,
-          ]
-        );
-      } else if (directoryId !== null) {
-        // 既存画像のdirectory_idを更新（NULLの場合のみ）
-        await db.execute(
-          'UPDATE images SET directory_id = $1 WHERE file_path = $2 AND directory_id IS NULL',
-          [directoryId, fileInfo.file_path]
-        );
-      }
-    }
-
-    // ディレクトリのファイル数とスキャン日時を更新
-    if (directoryId !== null) {
-      await db.execute(
-        'UPDATE directories SET file_count = (SELECT COUNT(*) FROM images WHERE directory_id = $1), last_scanned_at = CURRENT_TIMESTAMP WHERE id = $1',
-        [directoryId]
-      );
-    }
-
-    // すべてのメディアファイルを取得して返す
-    return await getAllImages();
-  } finally {
-    await db.close();
   }
+
+  // データベースにファイルを挿入
+  for (const fileInfo of fileInfos) {
+    // 既に存在するかチェック
+    const existing = await db.select<{ count: number }[]>(
+      'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
+      [fileInfo.file_path]
+    );
+
+    if (existing[0].count === 0) {
+      await db.execute(
+        'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+        [
+          fileInfo.file_path,
+          fileInfo.file_name,
+          fileInfo.file_type,
+          fileInfo.duration_seconds ?? null,
+          fileInfo.width ?? null,
+          fileInfo.height ?? null,
+          fileInfo.video_codec ?? null,
+          fileInfo.audio_codec ?? null,
+          directoryId,
+        ]
+      );
+    } else if (directoryId !== null) {
+      // 既存画像のdirectory_idを更新（NULLの場合のみ）
+      await db.execute(
+        'UPDATE images SET directory_id = $1 WHERE file_path = $2 AND directory_id IS NULL',
+        [directoryId, fileInfo.file_path]
+      );
+    }
+  }
+
+  // ディレクトリのファイル数とスキャン日時を更新
+  if (directoryId !== null) {
+    await db.execute(
+      'UPDATE directories SET file_count = (SELECT COUNT(*) FROM images WHERE directory_id = $1), last_scanned_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [directoryId]
+    );
+  }
+
+  // すべてのメディアファイルを取得して返す
+  return await getAllImages();
 }
 
 /**
@@ -219,15 +222,10 @@ const IMAGE_COLUMNS = 'id, file_path, file_name, file_type, comment, tags, ratin
  */
 export async function getAllImages(): Promise<ImageData[]> {
   const db = await getDatabase();
-
-  try {
-    const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
-      `SELECT ${IMAGE_COLUMNS} FROM images ORDER BY created_at DESC, id DESC`
-    );
-    return results.map(rowToImageData);
-  } finally {
-    await db.close();
-  }
+  const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
+    `SELECT ${IMAGE_COLUMNS} FROM images ORDER BY created_at DESC, id DESC`
+  );
+  return results.map(rowToImageData);
 }
 
 /**
@@ -237,16 +235,11 @@ export async function getAllImages(): Promise<ImageData[]> {
  */
 export async function getImagesByDirectoryId(directoryId: number): Promise<ImageData[]> {
   const db = await getDatabase();
-
-  try {
-    const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
-      `SELECT ${IMAGE_COLUMNS} FROM images WHERE directory_id = $1 ORDER BY created_at DESC, id DESC`,
-      [directoryId]
-    );
-    return results.map(rowToImageData);
-  } finally {
-    await db.close();
-  }
+  const results = await db.select<Array<Parameters<typeof rowToImageData>[0]>>(
+    `SELECT ${IMAGE_COLUMNS} FROM images WHERE directory_id = $1 ORDER BY created_at DESC, id DESC`,
+    [directoryId]
+  );
+  return results.map(rowToImageData);
 }
 
 /**
@@ -258,44 +251,40 @@ export async function updateImageMetadata(
 ): Promise<void> {
   const db = await getDatabase();
 
-  try {
-    const updates: string[] = [];
-    const values: any[] = [];
-    let paramIndex = 1;
+  const updates: string[] = [];
+  const values: any[] = [];
+  let paramIndex = 1;
 
-    // 更新するフィールドを動的に構築
-    if (data.rating !== undefined) {
-      updates.push(`rating = $${paramIndex++}`);
-      values.push(data.rating);
-    }
-
-    if (data.comment !== undefined) {
-      updates.push(`comment = $${paramIndex++}`);
-      values.push(data.comment);
-    }
-
-    if (data.tags !== undefined) {
-      updates.push(`tags = $${paramIndex++}`);
-      values.push(JSON.stringify(data.tags));
-    }
-
-    if (data.is_favorite !== undefined) {
-      updates.push(`is_favorite = $${paramIndex++}`);
-      values.push(data.is_favorite);
-    }
-
-    // updated_atを現在時刻に更新
-    updates.push(`updated_at = CURRENT_TIMESTAMP`);
-
-    // WHERE句のためのIDを追加
-    values.push(data.id);
-
-    const query = `UPDATE images SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
-
-    await db.execute(query, values);
-  } finally {
-    await db.close();
+  // 更新するフィールドを動的に構築
+  if (data.rating !== undefined) {
+    updates.push(`rating = $${paramIndex++}`);
+    values.push(data.rating);
   }
+
+  if (data.comment !== undefined) {
+    updates.push(`comment = $${paramIndex++}`);
+    values.push(data.comment);
+  }
+
+  if (data.tags !== undefined) {
+    updates.push(`tags = $${paramIndex++}`);
+    values.push(JSON.stringify(data.tags));
+  }
+
+  if (data.is_favorite !== undefined) {
+    updates.push(`is_favorite = $${paramIndex++}`);
+    values.push(data.is_favorite);
+  }
+
+  // updated_atを現在時刻に更新
+  updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+  // WHERE句のためのIDを追加
+  values.push(data.id);
+
+  const query = `UPDATE images SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
+
+  await db.execute(query, values);
 }
 
 /**
@@ -505,35 +494,31 @@ export async function scanSingleDirectory(directoryId: number): Promise<ImageDat
   const fileInfos = await invoke<ImageFileInfo[]>('scan_single_directory', { directoryId });
   const db = await getDatabase();
 
-  try {
-    for (const fileInfo of fileInfos) {
-      const existing = await db.select<{ count: number }[]>(
-        'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
-        [fileInfo.file_path]
+  for (const fileInfo of fileInfos) {
+    const existing = await db.select<{ count: number }[]>(
+      'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
+      [fileInfo.file_path]
+    );
+
+    if (existing[0].count === 0) {
+      await db.execute(
+        'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT id FROM directories WHERE path = (SELECT path FROM directories WHERE id = $9)))',
+        [
+          fileInfo.file_path,
+          fileInfo.file_name,
+          fileInfo.file_type,
+          fileInfo.duration_seconds ?? null,
+          fileInfo.width ?? null,
+          fileInfo.height ?? null,
+          fileInfo.video_codec ?? null,
+          fileInfo.audio_codec ?? null,
+          directoryId,
+        ]
       );
-
-      if (existing[0].count === 0) {
-        await db.execute(
-          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec, directory_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, (SELECT id FROM directories WHERE path = (SELECT path FROM directories WHERE id = $9)))',
-          [
-            fileInfo.file_path,
-            fileInfo.file_name,
-            fileInfo.file_type,
-            fileInfo.duration_seconds ?? null,
-            fileInfo.width ?? null,
-            fileInfo.height ?? null,
-            fileInfo.video_codec ?? null,
-            fileInfo.audio_codec ?? null,
-            directoryId,
-          ]
-        );
-      }
     }
-
-    return await getAllImages();
-  } finally {
-    await db.close();
   }
+
+  return await getAllImages();
 }
 
 /**
@@ -544,34 +529,30 @@ export async function scanAllActiveDirectories(): Promise<ImageData[]> {
   const fileInfos = await invoke<ImageFileInfo[]>('scan_all_active_directories');
   const db = await getDatabase();
 
-  try {
-    for (const fileInfo of fileInfos) {
-      const existing = await db.select<{ count: number }[]>(
-        'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
-        [fileInfo.file_path]
+  for (const fileInfo of fileInfos) {
+    const existing = await db.select<{ count: number }[]>(
+      'SELECT COUNT(*) as count FROM images WHERE file_path = $1',
+      [fileInfo.file_path]
+    );
+
+    if (existing[0].count === 0) {
+      await db.execute(
+        'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+        [
+          fileInfo.file_path,
+          fileInfo.file_name,
+          fileInfo.file_type,
+          fileInfo.duration_seconds ?? null,
+          fileInfo.width ?? null,
+          fileInfo.height ?? null,
+          fileInfo.video_codec ?? null,
+          fileInfo.audio_codec ?? null,
+        ]
       );
-
-      if (existing[0].count === 0) {
-        await db.execute(
-          'INSERT INTO images (file_path, file_name, file_type, duration_seconds, width, height, video_codec, audio_codec) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
-          [
-            fileInfo.file_path,
-            fileInfo.file_name,
-            fileInfo.file_type,
-            fileInfo.duration_seconds ?? null,
-            fileInfo.width ?? null,
-            fileInfo.height ?? null,
-            fileInfo.video_codec ?? null,
-            fileInfo.audio_codec ?? null,
-          ]
-        );
-      }
     }
-
-    return await getAllImages();
-  } finally {
-    await db.close();
   }
+
+  return await getAllImages();
 }
 
 /**

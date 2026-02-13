@@ -24,17 +24,16 @@ function GroupAlbumView() {
     setRepImageSelectionMode,
     showToast,
     updateGroup,
-    resetAllModes,
   } = useImageStore();
 
   const [group, setGroup] = useState<GroupData | null>(null);
   const [groupImageIds, setGroupImageIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ページ遷移時にモード状態をクリア
+  // ページ遷移時にモード状態をクリア（依存配列を空にして1回だけ登録）
   useEffect(() => {
-    return () => { resetAllModes(); };
-  }, [resetAllModes]);
+    return () => { useImageStore.getState().resetAllModes(); };
+  }, []);
 
   // 代表画像をuseMemoで計算（パフォーマンス最適化）
   // allImages全体の変更ではなく、代表画像IDが変更された時のみ実質的に更新される

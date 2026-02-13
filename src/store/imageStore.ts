@@ -119,6 +119,8 @@ interface ImageStore {
 
   /** 選択されたディレクトリID（nullは全画像表示） */
   selectedDirectoryId: number | null;
+  /** 最後に画像をロードしたディレクトリID（再フェッチスキップ判定用） */
+  _lastLoadedDirectoryId: number | null;
 
   /** 画像データの配列を設定します */
   setImages: (images: ImageData[]) => void;
@@ -254,6 +256,7 @@ export const useImageStore = create<ImageStore>()(
       repImageSelectionGroupId: null,
 
       selectedDirectoryId: null,
+      _lastLoadedDirectoryId: null,
 
       setImages: (images) => set({ images }),
       setCurrentDirectory: (path) => set({ currentDirectory: path }),
