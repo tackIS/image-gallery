@@ -2,7 +2,6 @@ import { useEffect, useCallback } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import {
   startFileWatcher,
-  stopFileWatcher,
   getAllDirectories,
   getAllImages,
 } from '../utils/tauri-commands';
