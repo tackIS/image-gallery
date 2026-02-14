@@ -210,6 +210,9 @@ interface ImageStore {
 
   /** すべての選択モードをリセットします（ページ遷移時に使用） */
   resetAllModes: () => void;
+
+  /** グループビューのクリーンアップ（バッチ更新） */
+  cleanupGroupView: () => void;
 }
 
 /**
@@ -486,6 +489,17 @@ export const useImageStore = create<ImageStore>()(
           selectedImageIds: [],
           isRepImageSelectionMode: false,
           repImageSelectionGroupId: null,
+        }),
+
+      // グループビューのクリーンアップ（1回のストア更新で全てリセット）
+      cleanupGroupView: () =>
+        set({
+          isSelectionMode: false,
+          selectedImageIds: [],
+          isRepImageSelectionMode: false,
+          repImageSelectionGroupId: null,
+          selectedGroupId: null,
+          groupFilteredImageIds: [],
         }),
     }),
     {

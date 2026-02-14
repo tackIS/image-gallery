@@ -10,7 +10,11 @@ type ImageGridProps = {
 };
 
 export default function ImageGrid({ onImageClick, images: propsImages }: ImageGridProps) {
-  const { images: storeImages, getSortedImages, selectedGroupId, groups, viewMode } = useImageStore();
+  const storeImages = useImageStore(s => s.images);
+  const getSortedImages = useImageStore(s => s.getSortedImages);
+  const selectedGroupId = useImageStore(s => s.selectedGroupId);
+  const groups = useImageStore(s => s.groups);
+  const viewMode = useImageStore(s => s.viewMode);
 
   const displayImages = propsImages ?? getSortedImages();
   const allImages = propsImages ?? storeImages;

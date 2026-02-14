@@ -120,9 +120,9 @@ function MainGallery() {
           <Sidebar isOpen={isSidebarOpen} />
 
           {/* メインコンテンツ */}
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 flex flex-col overflow-hidden">
             {error && (
-              <div className="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded mb-4 mx-4">
+              <div className="shrink-0 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded mb-4 mx-4">
                 Error: {error}
               </div>
             )}
@@ -130,7 +130,7 @@ function MainGallery() {
             {isLoading && <LoadingSpinner />}
 
             {!isLoading && currentDirectory && (
-              <div className="px-4 pt-4 pb-2">
+              <div className="shrink-0 px-4 pt-4 pb-2">
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Current directory: <span className="font-medium dark:text-gray-300">{currentDirectory}</span>
                 </p>

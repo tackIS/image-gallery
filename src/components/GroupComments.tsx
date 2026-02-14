@@ -9,7 +9,8 @@ type GroupCommentsProps = {
 };
 
 function GroupComments({ groupId }: GroupCommentsProps) {
-  const { showToast, setError } = useImageStore();
+  const showToast = useImageStore(s => s.showToast);
+  const setError = useImageStore(s => s.setError);
   const [comments, setComments] = useState<GroupComment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);

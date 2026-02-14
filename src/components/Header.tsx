@@ -15,14 +15,12 @@ type HeaderProps = {
 };
 
 export default function Header({ isSidebarOpen, onToggleSidebar }: HeaderProps) {
-  const {
-    images,
-    filterSettings,
-    getSortedAndFilteredImages,
-    isSelectionMode,
-    toggleSelectionMode,
-    selectedImageIds,
-  } = useImageStore();
+  const images = useImageStore(s => s.images);
+  const filterSettings = useImageStore(s => s.filterSettings);
+  const getSortedAndFilteredImages = useImageStore(s => s.getSortedAndFilteredImages);
+  const isSelectionMode = useImageStore(s => s.isSelectionMode);
+  const toggleSelectionMode = useImageStore(s => s.toggleSelectionMode);
+  const selectedImageIds = useImageStore(s => s.selectedImageIds);
   const [showSettings, setShowSettings] = useState(false);
   const { theme, setTheme, resolvedTheme } = useTheme();
 

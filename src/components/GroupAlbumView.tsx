@@ -16,27 +16,22 @@ function GroupAlbumView() {
   const navigate = useNavigate();
   const groupId = id ? parseInt(id, 10) : null;
 
-  const {
-    images: allImages,
-    setImages,
-    setError,
-    isRepImageSelectionMode,
-    setRepImageSelectionMode,
-    showToast,
-    updateGroup,
-  } = useImageStore();
+  const allImages = useImageStore(s => s.images);
+  const setImages = useImageStore(s => s.setImages);
+  const setError = useImageStore(s => s.setError);
+  const isRepImageSelectionMode = useImageStore(s => s.isRepImageSelectionMode);
+  const setRepImageSelectionMode = useImageStore(s => s.setRepImageSelectionMode);
+  const showToast = useImageStore(s => s.showToast);
+  const updateGroup = useImageStore(s => s.updateGroup);
 
   const [group, setGroup] = useState<GroupData | null>(null);
   const [groupImageIds, setGroupImageIds] = useState<number[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ページ遷移時にモード状態をクリア（依存配列を空にして1回だけ登録）
+  // ページ遷移時にモード状態をクリア（1回のバッチ更新で全てリセット）
   useEffect(() => {
     return () => {
-      const state = useImageStore.getState();
-      state.resetAllModes();
-      state.setSelectedGroupId(null);
-      state.setGroupFilteredImageIds([]);
+      useImageStore.getState().cleanupGroupView();
     };
   }, []);
 

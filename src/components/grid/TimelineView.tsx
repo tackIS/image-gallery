@@ -105,7 +105,7 @@ export default function TimelineView({ images, onImageClick }: TimelineViewProps
   }, [onImageClick, setSelectedImageId]);
 
   return (
-    <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">
+    <div ref={parentRef} className="flex-1 min-h-0 overflow-y-auto p-4 relative">
       {stickyHeader && (
         <div className="sticky top-0 z-20 bg-gray-50/95 dark:bg-gray-900/95 backdrop-blur-sm px-2 py-2 rounded">
           <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
