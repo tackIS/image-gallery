@@ -11,7 +11,7 @@ type VirtualListProps = {
 
 export default function VirtualList({ images, onImageClick }: VirtualListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { setSelectedImageId } = useImageStore();
+  const setSelectedImageId = useImageStore(s => s.setSelectedImageId);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
   const virtualizer = useVirtualizer({
@@ -21,13 +21,13 @@ export default function VirtualList({ images, onImageClick }: VirtualListProps) 
     overscan: 10,
   });
 
-  const handleClick = (imageId: number) => {
+  const handleClick = useCallback((imageId: number) => {
     if (onImageClick) {
       onImageClick(imageId);
     } else {
       setSelectedImageId(imageId);
     }
-  };
+  }, [onImageClick, setSelectedImageId]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     let nextIndex = index;

@@ -23,8 +23,12 @@ interface ImageFileInfo {
  * @returns 初期化成功メッセージ
  * @throws データベース初期化に失敗した場合
  */
+let dbInitialized = false;
 export async function initializeDatabase(): Promise<string> {
-  return await invoke<string>('initialize_database');
+  if (dbInitialized) return "Database already initialized";
+  const result = await invoke<string>('initialize_database');
+  dbInitialized = true;
+  return result;
 }
 
 /**
@@ -53,6 +57,7 @@ export async function backupDatabase(): Promise<string> {
  */
 export async function resetDatabase(): Promise<string> {
   dbInstance = null;
+  dbInitialized = false;
   return await invoke<string>('reset_database');
 }
 

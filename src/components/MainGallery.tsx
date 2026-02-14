@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useImageStore } from '../store/imageStore';
-import { initializeDatabase, getDatabasePath, getAllGroups, getAllImages, getImagesByDirectoryId } from '../utils/tauri-commands';
+import { initializeDatabase, getAllGroups, getAllImages, getImagesByDirectoryId } from '../utils/tauri-commands';
 import { useDirectoryWatcher } from '../hooks/useDirectoryWatcher';
 import Header from './Header';
 import Sidebar from './Sidebar';
@@ -13,112 +13,99 @@ import Toast from './Toast';
 import DndProvider from './dnd/DndProvider';
 import UndoRedoBar from './UndoRedoBar';
 
+/**
+ * ImageDetailを必要な時だけマウントするラッパー
+ */
+function ConditionalImageDetail() {
+  const selectedImageId = useImageStore(s => s.selectedImageId);
+  if (selectedImageId === null) return null;
+  return <ImageDetail />;
+}
+
 function MainGallery() {
-  const {
-    images,
-    currentDirectory,
-    error,
-    isLoading,
-    setImages,
-    setError,
-    setLoading,
-    setGroups,
-    isSelectionMode,
-    toggleSelectAll,
-    clearSelection,
-    toggleSelectionMode,
-    setSelectedGroupId,
-    setGroupFilteredImageIds,
-  } = useImageStore();
+  const hasImages = useImageStore(s => s.images.length > 0);
+  const imageCount = useImageStore(s => s.images.length);
+  const currentDirectory = useImageStore(s => s.currentDirectory);
+  const error = useImageStore(s => s.error);
+  const isLoading = useImageStore(s => s.isLoading);
+  const isSelectionMode = useImageStore(s => s.isSelectionMode);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // ファイルウォッチャーを起動（アクティブディレクトリの変更を自動検出）
   useDirectoryWatcher();
 
-  // メインギャラリーに戻った時にグループフィルター状態をクリア
-  useEffect(() => {
-    setSelectedGroupId(null);
-    setGroupFilteredImageIds([]);
-  }, [setSelectedGroupId, setGroupFilteredImageIds]);
-
   useEffect(() => {
     const init = async () => {
       try {
-        // データベースパスを取得（ディレクトリ作成のみ）
-        const dbPath = await getDatabasePath();
-        console.log('Database path:', dbPath);
-
-        // データベース初期化は毎回実行（接続プールの確立に必要）
-        await initializeDatabase();
-        console.log('Database initialized successfully');
-
-        // グループを読み込み
-        const groups = await getAllGroups();
-        setGroups(groups);
-        console.log(`Loaded ${groups.length} groups`);
+        // データベース初期化とグループ読み込みを並行実行
+        const [, groups] = await Promise.all([
+          initializeDatabase(),
+          getAllGroups(),
+        ]);
+        useImageStore.getState().setGroups(groups);
 
         // 既に画像が読み込み済みで、同じディレクトリの場合は再フェッチをスキップ
         const state = useImageStore.getState();
         const dirId = state.selectedDirectoryId;
         if (state.images.length > 0 && dirId === state._lastLoadedDirectoryId) return;
 
-        setLoading(true);
+        useImageStore.getState().setLoading(true);
 
         // selectedDirectoryId に応じて画像をロード
         if (dirId !== null) {
           const dirImages = await getImagesByDirectoryId(dirId);
-          setImages(dirImages);
+          useImageStore.getState().setImages(dirImages);
         } else {
           const allImages = await getAllImages();
-          setImages(allImages);
+          useImageStore.getState().setImages(allImages);
         }
         useImageStore.setState({ _lastLoadedDirectoryId: dirId });
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        useImageStore.getState().setError(err instanceof Error ? err.message : String(err));
         console.error('Database initialization error:', err);
       } finally {
-        setLoading(false);
+        useImageStore.getState().setLoading(false);
       }
     };
     init();
-  }, [setError, setLoading, setGroups, setImages]);
+  }, []);
 
-  // キーボードショートカット
+  // キーボードショートカット（getState()で常に最新状態を参照）
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // 入力フィールド内では動作しない
       const target = e.target;
       if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-        // Escapeだけは入力フィールド内でも動作させる
-        if (e.key === 'Escape' && isSelectionMode) {
-          clearSelection();
-          toggleSelectionMode();
+        if (e.key === 'Escape') {
+          const state = useImageStore.getState();
+          if (state.isSelectionMode) {
+            state.clearSelection();
+            state.toggleSelectionMode();
+          }
         }
         return;
       }
 
-      // Ctrl/Cmd + A: 全選択
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && isSelectionMode) {
+      const state = useImageStore.getState();
+
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && state.isSelectionMode) {
         e.preventDefault();
-        toggleSelectAll();
+        state.toggleSelectAll();
       }
 
-      // Ctrl/Cmd + D: 選択解除
-      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && isSelectionMode) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'd' && state.isSelectionMode) {
         e.preventDefault();
-        clearSelection();
+        state.clearSelection();
       }
 
-      // Escape: 選択モード終了
-      if (e.key === 'Escape' && isSelectionMode) {
-        clearSelection();
-        toggleSelectionMode();
+      if (e.key === 'Escape' && state.isSelectionMode) {
+        state.clearSelection();
+        state.toggleSelectionMode();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSelectionMode, toggleSelectAll, clearSelection, toggleSelectionMode]);
+  }, []);
 
   return (
     <DndProvider>
@@ -148,14 +135,14 @@ function MainGallery() {
                   Current directory: <span className="font-medium dark:text-gray-300">{currentDirectory}</span>
                 </p>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Images found: <span className="font-medium dark:text-gray-300">{images.length}</span>
+                  Images found: <span className="font-medium dark:text-gray-300">{imageCount}</span>
                 </p>
               </div>
             )}
 
-            {!isLoading && images.length === 0 && <EmptyState />}
+            {!isLoading && !hasImages && <EmptyState />}
 
-            {!isLoading && images.length > 0 && <ImageGrid />}
+            {!isLoading && hasImages && <ImageGrid />}
           </main>
         </div>
 
@@ -168,8 +155,8 @@ function MainGallery() {
         {/* トースト通知 */}
         <Toast />
 
-        {/* 画像詳細モーダル */}
-        <ImageDetail />
+        {/* 画像詳細モーダル（選択時のみマウント） */}
+        <ConditionalImageDetail />
       </div>
     </DndProvider>
   );

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { Play, AlertCircle, Heart, Check } from 'lucide-react';
 import { useDraggable } from '@dnd-kit/core';
@@ -22,15 +22,17 @@ type MediaCardProps = {
  * 動画の場合はvideoタグでサムネイル表示し、再生アイコンを表示します。
  * エラー時には適切なエラーメッセージを表示します。
  */
-export default function MediaCard({ media, onClick, forceClick, tabIndex, ariaSelected, onKeyDown }: MediaCardProps) {
+export default memo(function MediaCard({ media, onClick, forceClick, tabIndex, ariaSelected, onKeyDown }: MediaCardProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
-  const { toggleFavorite, isSelectionMode, selectedImageIds, toggleImageSelection } = useImageStore();
+  const isSelectionMode = useImageStore(s => s.isSelectionMode);
+  const isSelected = useImageStore(s => s.selectedImageIds.includes(media.id));
+  const toggleFavorite = useImageStore(s => s.toggleFavorite);
+  const toggleImageSelection = useImageStore(s => s.toggleImageSelection);
   const isFavorite = media.is_favorite === 1;
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [isGeneratingThumbnail, setIsGeneratingThumbnail] = useState(false);
-  const isSelected = selectedImageIds.includes(media.id);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `media-${media.id}`,
@@ -216,4 +218,4 @@ export default function MediaCard({ media, onClick, forceClick, tabIndex, ariaSe
       </div>
     </div>
   );
-}
+});

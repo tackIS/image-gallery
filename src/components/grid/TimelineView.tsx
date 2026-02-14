@@ -1,4 +1,4 @@
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useCallback } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useImageStore } from '../../store/imageStore';
 import MediaCard from '../MediaCard';
@@ -37,7 +37,8 @@ const HEADER_HEIGHT = 44;
 
 export default function TimelineView({ images, onImageClick }: TimelineViewProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { gridDensity, setSelectedImageId } = useImageStore();
+  const gridDensity = useImageStore(s => s.gridDensity);
+  const setSelectedImageId = useImageStore(s => s.setSelectedImageId);
   const columns = useColumns(gridDensity);
   const rowHeight = gridDensity === 'compact' ? 160 : gridDensity === 'comfortable' ? 320 : 220;
 
@@ -95,13 +96,13 @@ export default function TimelineView({ images, onImageClick }: TimelineViewProps
     }
   }
 
-  const handleClick = (imageId: number) => {
+  const handleClick = useCallback((imageId: number) => {
     if (onImageClick) {
       onImageClick(imageId);
     } else {
       setSelectedImageId(imageId);
     }
-  };
+  }, [onImageClick, setSelectedImageId]);
 
   return (
     <div ref={parentRef} className="flex-1 overflow-y-auto p-4 relative">

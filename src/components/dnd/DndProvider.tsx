@@ -19,13 +19,6 @@ export default function DndProvider({ children }: DndProviderProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragCount, setDragCount] = useState(0);
 
-  const {
-    isSelectionMode,
-    selectedImageIds,
-    setGroups,
-    showToast,
-  } = useImageStore();
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -38,6 +31,7 @@ export default function DndProvider({ children }: DndProviderProps) {
     const id = String(event.active.id);
     setActiveId(id);
 
+    const { isSelectionMode, selectedImageIds } = useImageStore.getState();
     if (isSelectionMode && selectedImageIds.length > 0) {
       const imageId = parseInt(id.replace('media-', ''));
       if (selectedImageIds.includes(imageId)) {
@@ -48,7 +42,7 @@ export default function DndProvider({ children }: DndProviderProps) {
     } else {
       setDragCount(1);
     }
-  }, [isSelectionMode, selectedImageIds]);
+  }, []);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     setActiveId(null);
@@ -62,6 +56,7 @@ export default function DndProvider({ children }: DndProviderProps) {
     const groupId = parseInt(overId.replace('group-', ''));
     const draggedImageId = parseInt(String(active.id).replace('media-', ''));
 
+    const { isSelectionMode, selectedImageIds } = useImageStore.getState();
     let imageIds: number[];
     if (isSelectionMode && selectedImageIds.length > 0 && selectedImageIds.includes(draggedImageId)) {
       imageIds = selectedImageIds;
@@ -72,13 +67,13 @@ export default function DndProvider({ children }: DndProviderProps) {
     try {
       await addImagesToGroup(imageIds, groupId);
       const updatedGroups = await getAllGroups();
-      setGroups(updatedGroups);
-      showToast(`${imageIds.length} item(s) added to group`, 'success');
+      useImageStore.getState().setGroups(updatedGroups);
+      useImageStore.getState().showToast(`${imageIds.length} item(s) added to group`, 'success');
     } catch (err) {
       console.error('Failed to add images to group:', err);
-      showToast('Failed to add to group', 'error');
+      useImageStore.getState().showToast('Failed to add to group', 'error');
     }
-  }, [isSelectionMode, selectedImageIds, setGroups, showToast]);
+  }, []);
 
   return (
     <DndContext

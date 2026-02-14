@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { Play, Heart, Check, Star, Tag, MessageSquare } from 'lucide-react';
 import { useImageStore } from '../../store/imageStore';
@@ -13,14 +13,16 @@ type ListItemProps = {
   onKeyDown?: (e: React.KeyboardEvent) => void;
 };
 
-export default function ListItem({ media, onClick, forceClick, tabIndex, onKeyDown }: ListItemProps) {
+export default memo(function ListItem({ media, onClick, forceClick, tabIndex, onKeyDown }: ListItemProps) {
   const mediaUrl = convertFileSrc(media.file_path, 'asset');
   const isVideo = media.file_type === 'video';
   const [hasError, setHasError] = useState(false);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
-  const { toggleFavorite, isSelectionMode, selectedImageIds, toggleImageSelection } = useImageStore();
+  const isSelectionMode = useImageStore(s => s.isSelectionMode);
+  const isSelected = useImageStore(s => s.selectedImageIds.includes(media.id));
+  const toggleFavorite = useImageStore(s => s.toggleFavorite);
+  const toggleImageSelection = useImageStore(s => s.toggleImageSelection);
   const isFavorite = media.is_favorite === 1;
-  const isSelected = selectedImageIds.includes(media.id);
 
   const handleClick = () => {
     if (forceClick) {
@@ -126,4 +128,4 @@ export default function ListItem({ media, onClick, forceClick, tabIndex, onKeyDo
       </button>
     </div>
   );
-}
+});

@@ -32,7 +32,12 @@ function GroupAlbumView() {
 
   // ページ遷移時にモード状態をクリア（依存配列を空にして1回だけ登録）
   useEffect(() => {
-    return () => { useImageStore.getState().resetAllModes(); };
+    return () => {
+      const state = useImageStore.getState();
+      state.resetAllModes();
+      state.setSelectedGroupId(null);
+      state.setGroupFilteredImageIds([]);
+    };
   }, []);
 
   // 代表画像をuseMemoで計算（パフォーマンス最適化）

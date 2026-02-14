@@ -26,7 +26,10 @@ function useColumns(density: keyof typeof DENSITY_COLUMNS): number {
 
 export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) {
   const parentRef = useRef<HTMLDivElement>(null);
-  const { gridDensity, setSelectedImageId, isSelectionMode, toggleImageSelection } = useImageStore();
+  const gridDensity = useImageStore(s => s.gridDensity);
+  const setSelectedImageId = useImageStore(s => s.setSelectedImageId);
+  const isSelectionMode = useImageStore(s => s.isSelectionMode);
+  const toggleImageSelection = useImageStore(s => s.toggleImageSelection);
   const columns = useColumns(gridDensity);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
@@ -47,13 +50,13 @@ export default function VirtualGrid({ images, onImageClick }: VirtualGridProps) 
     overscan: 3,
   });
 
-  const handleClick = (imageId: number) => {
+  const handleClick = useCallback((imageId: number) => {
     if (onImageClick) {
       onImageClick(imageId);
     } else {
       setSelectedImageId(imageId);
     }
-  };
+  }, [onImageClick, setSelectedImageId]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, flatIndex: number) => {
     let nextIndex = flatIndex;

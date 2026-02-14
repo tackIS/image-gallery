@@ -13,13 +13,14 @@ type FileChangePayload = {
   removed: string[];
 };
 
+let watcherStarted = false;
+
 /**
  * アクティブディレクトリのファイル変更を監視し、自動的にギャラリーを更新するフック
  */
 export function useDirectoryWatcher() {
-  const { setImages, showToast } = useImageStore();
-
   const startWatching = useCallback(async () => {
+    if (watcherStarted) return;
     try {
       const dirs = await getAllDirectories();
       const activePaths = dirs
@@ -28,6 +29,7 @@ export function useDirectoryWatcher() {
 
       if (activePaths.length > 0) {
         await startFileWatcher(activePaths);
+        watcherStarted = true;
       }
     } catch (err) {
       console.error('Failed to start file watcher:', err);
@@ -48,7 +50,7 @@ export function useDirectoryWatcher() {
         try {
           // DBを再読み込みして最新状態を反映
           const images = await getAllImages();
-          setImages(images);
+          useImageStore.getState().setImages(images);
 
           // トースト通知
           const parts: string[] = [];
@@ -58,7 +60,7 @@ export function useDirectoryWatcher() {
           if (removed.length > 0) {
             parts.push(`${removed.length} file${removed.length > 1 ? 's' : ''} removed`);
           }
-          showToast(parts.join(', '), 'info');
+          useImageStore.getState().showToast(parts.join(', '), 'info');
         } catch (err) {
           console.error('Failed to process file change:', err);
         }
@@ -70,17 +72,11 @@ export function useDirectoryWatcher() {
     return () => {
       if (unlisten) unlisten();
     };
-  }, [setImages, showToast]);
+  }, []);
 
-  // ウォッチャーの起動/停止
+  // ウォッチャーの起動（モジュールレベルフラグで再起動を抑制）
   useEffect(() => {
     startWatching();
-
-    return () => {
-      stopFileWatcher().catch((err) => {
-        console.error('Failed to stop file watcher:', err);
-      });
-    };
   }, [startWatching]);
 
   return { restartWatcher: startWatching };
